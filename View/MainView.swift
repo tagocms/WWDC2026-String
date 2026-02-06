@@ -22,8 +22,8 @@ struct MainView: View {
                     Color.white
                     buildRectangles(in: geometry)
                 }
-            case .folders:
-                Text("FOLDERS")
+            case .slipboxes:
+                Text("SLIPBOXES")
                     .font(Font.largeTitle.bold())
             }
         }
@@ -99,8 +99,8 @@ struct MainView: View {
         MultitouchGestureRecognizer()
             .onEnded { value in
             withAnimation {
-                if value.translation.height < -50 && viewState != .folders {
-                    viewState = .folders
+                if value.translation.height < -50 && viewState != .slipboxes {
+                    viewState = .slipboxes
                 } else if value.translation.height > 50 && viewState != .map {
                     zoomToFit()
                     viewState = .map
@@ -144,5 +144,5 @@ extension CGSize {
 }
 
 enum ViewState {
-    case map, folders
+    case map, slipboxes
 }

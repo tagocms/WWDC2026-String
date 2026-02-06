@@ -14,10 +14,10 @@ final class SlipBox: Identifiable {
     var dateLastUpdated: Date
     
     @Relationship(deleteRule: .nullify)
-    var parentFolder: SlipBox? = nil
-    @Relationship(deleteRule: .cascade, inverse: \SlipBox.parentFolder)
-    var subfolders: [SlipBox] = []
-    @Relationship(deleteRule: .cascade, inverse: \Note.folder)
+    var parentSlipBox: SlipBox? = nil
+    @Relationship(deleteRule: .cascade, inverse: \SlipBox.parentSlipBox)
+    var slipboxes: [SlipBox] = []
+    @Relationship(deleteRule: .cascade, inverse: \Note.slipBox)
     var notes: [Note] = []
     
     var title: String

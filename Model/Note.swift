@@ -20,17 +20,17 @@ final class Note: Identifiable {
     @Relationship(deleteRule: .nullify)
     var backlinks: [Note] = []
     @Relationship(deleteRule: .nullify)
-    var folder: SlipBox
+    var slipBox: SlipBox
     
     var title: String
     var contentBody: String
     
-    init(dateCreated: Date = Date.now, dateLastUpdated: Date = Date.now, tags: [Tag], linkedNotes: [Note], folder: SlipBox, title: String, contentBody: String) {
+    init(dateCreated: Date = Date.now, dateLastUpdated: Date = Date.now, tags: [Tag], linkedNotes: [Note], slipBox: SlipBox, title: String, contentBody: String) {
         self.dateCreated = dateCreated
         self.dateLastUpdated = dateLastUpdated
         self.tags = tags
         self.linkedNotes = linkedNotes
-        self.folder = folder
+        self.slipBox = slipBox
         self.title = title
         self.contentBody = contentBody
     }
