@@ -1,6 +1,9 @@
+import SwiftData
 import SwiftUI
 
 struct MainView: View {
+    @State private var viewModel: MainViewModel
+    
     @State private var scaleEffect = 1.0
     @GestureState private var scaleEffectGestureState: CGFloat = 1
     @State private var panDistance: CGSize = CGSize.zero
@@ -12,6 +15,11 @@ struct MainView: View {
     
     let constantPositions: [CGPoint] = (0...10).map { number in
         CGPoint(x: CGFloat(Int.random(in: 0..<900)), y: CGFloat(Int.random(in: 0..<1200)))
+    }
+    
+    init() {
+        let modelContext = Environment(\.modelContext).wrappedValue
+        self._viewModel = State(initialValue: MainViewModel(modelContext))
     }
     
     var body: some View {

@@ -1,5 +1,5 @@
 //
-//  File.swift
+//  MultitouchGestureRecognizer.swift
 //  CreativeChallenge
 //
 //  Created by Tiago Camargo Maciel dos Santos on 05/02/26.

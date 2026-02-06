@@ -1,5 +1,5 @@
 //
-//  File.swift
+//  Slipbox.swift
 //  CreativeChallenge
 //
 //  Created by Tiago Camargo Maciel dos Santos on 06/02/26.
@@ -9,15 +9,15 @@ import Foundation
 import SwiftData
 
 @Model
-final class SlipBox: Identifiable {
+final class Slipbox: Identifiable {
     var dateCreated: Date
     var dateLastUpdated: Date
     
     @Relationship(deleteRule: .nullify)
-    var parentSlipBox: SlipBox? = nil
-    @Relationship(deleteRule: .cascade, inverse: \SlipBox.parentSlipBox)
-    var slipboxes: [SlipBox] = []
-    @Relationship(deleteRule: .cascade, inverse: \Note.slipBox)
+    var parentSlipbox: Slipbox? = nil
+    @Relationship(deleteRule: .cascade, inverse: \Slipbox.parentSlipbox)
+    var slipboxes: [Slipbox] = []
+    @Relationship(deleteRule: .cascade, inverse: \Note.slipbox)
     var notes: [Note] = []
     
     var title: String

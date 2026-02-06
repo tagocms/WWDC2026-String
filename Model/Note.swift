@@ -1,5 +1,5 @@
 //
-//  File.swift
+//  Note.swift
 //  CreativeChallenge
 //
 //  Created by Tiago Camargo Maciel dos Santos on 06/02/26.
@@ -20,17 +20,17 @@ final class Note: Identifiable {
     @Relationship(deleteRule: .nullify)
     var backlinks: [Note] = []
     @Relationship(deleteRule: .nullify)
-    var slipBox: SlipBox
+    var slipbox: Slipbox
     
     var title: String
     var contentBody: String
     
-    init(dateCreated: Date = Date.now, dateLastUpdated: Date = Date.now, tags: [Tag], linkedNotes: [Note], slipBox: SlipBox, title: String, contentBody: String) {
+    init(dateCreated: Date = Date.now, dateLastUpdated: Date = Date.now, tags: [Tag], linkedNotes: [Note], slipbox: Slipbox, title: String, contentBody: String) {
         self.dateCreated = dateCreated
         self.dateLastUpdated = dateLastUpdated
         self.tags = tags
         self.linkedNotes = linkedNotes
-        self.slipBox = slipBox
+        self.slipbox = slipbox
         self.title = title
         self.contentBody = contentBody
     }
