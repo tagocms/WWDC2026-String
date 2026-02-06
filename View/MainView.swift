@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct ContentView: View {
+struct MainView: View {
     @State private var scaleEffect = 1.0
     @GestureState private var scaleEffectGestureState: CGFloat = 1
     @State private var panDistance: CGSize = CGSize.zero
@@ -88,7 +88,6 @@ struct ContentView: View {
             .updating($rotationGestureState) { inMotionRotationValue, rotationGestureState, _ in
                 guard inMotionRotationValue.rotation.degrees.isNormal else { return }
                 rotationGestureState = inMotionRotationValue.rotation
-                print("Rotation value: \(inMotionRotationValue.rotation)")
             }
             .onEnded { endingRotationValue in
                 guard endingRotationValue.rotation.degrees.isNormal else { return }

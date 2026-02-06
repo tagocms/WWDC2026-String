@@ -11,11 +11,11 @@ import SwiftData
 final class Tag: Identifiable {
     @Attribute(.unique)
     var title: String
-    @Relationship(deleteRule: .nullify)
-    var notes: [Note]
     
-    init(title: String, notes: [Note]) {
+    @Relationship(deleteRule: .nullify,)
+    var notes: [Note] = []
+    
+    init(title: String) {
         self.title = title
-        self.notes = notes
     }
 }

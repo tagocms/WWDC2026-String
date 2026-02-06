@@ -12,20 +12,24 @@ import SwiftData
 final class Note: Identifiable {
     var dateCreated: Date
     var dateLastUpdated: Date
+    
+    @Relationship(deleteRule: .nullify, inverse: \Tag.notes)
     var tags: [Tag]
+    @Relationship(deleteRule: .nullify, inverse: \Note.backlinks)
     var linkedNotes: [Note]
     @Relationship(deleteRule: .nullify)
-    var backlinks: [Note]
-    var folder: Folder
+    var backlinks: [Note] = []
+    @Relationship(deleteRule: .nullify)
+    var folder: SlipBox
+    
     var title: String
     var contentBody: String
     
-    init(dateCreated: Date = Date.now, dateLastUpdated: Date = Date.now, tags: [Tag], linkedNotes: [Note], backlinks: [Note], folder: Folder, title: String, contentBody: String) {
+    init(dateCreated: Date = Date.now, dateLastUpdated: Date = Date.now, tags: [Tag], linkedNotes: [Note], folder: SlipBox, title: String, contentBody: String) {
         self.dateCreated = dateCreated
         self.dateLastUpdated = dateLastUpdated
         self.tags = tags
         self.linkedNotes = linkedNotes
-        self.backlinks = backlinks
         self.folder = folder
         self.title = title
         self.contentBody = contentBody
