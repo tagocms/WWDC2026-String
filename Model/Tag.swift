@@ -10,12 +10,12 @@ import SwiftData
 @Model
 final class Tag: Identifiable {
     @Attribute(.unique)
-    var title: String
+    var name: String
     
     @Relationship(deleteRule: .nullify,)
     var notes: [Note] = []
     
     init(title: String) {
-        self.title = title
+        self.name = title
     }
 }

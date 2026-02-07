@@ -2,7 +2,8 @@ import SwiftData
 import SwiftUI
 
 struct MainView: View {
-    @State private var viewModel: MainViewModel
+    @Environment(\.modelContext) private var modelContext
+    @State private var viewModel: MainViewModel = MainViewModel()
     
     @State private var scaleEffect = 1.0
     @GestureState private var scaleEffectGestureState: CGFloat = 1
@@ -15,11 +16,6 @@ struct MainView: View {
     
     let constantPositions: [CGPoint] = (0...10).map { number in
         CGPoint(x: CGFloat(Int.random(in: 0..<900)), y: CGFloat(Int.random(in: 0..<1200)))
-    }
-    
-    init() {
-        let modelContext = Environment(\.modelContext).wrappedValue
-        self._viewModel = State(initialValue: MainViewModel(modelContext))
     }
     
     var body: some View {
@@ -41,20 +37,27 @@ struct MainView: View {
             zoomToFit()
         }
         .gesture(multitouchGesture)
+        .task {
+            if viewModel.modelContext == nil {
+                viewModel.setModelContext(modelContext)
+                viewModel.buildExampleData()
+            }
+            print(viewModel.notes)
+        }
     }
     
     @ViewBuilder
     func buildRectangles(in geometry: GeometryProxy) -> some View {
-        ForEach(0...10, id: \.self) { number in
+        ForEach(viewModel.notes) { note in
             RoundedRectangle(cornerRadius: 12)
                 .fill(.gray)
                 .aspectRatio(2/3, contentMode: .fit)
                 .frame(width: 100)
                 .overlay(
-                    Text("\(number)")
+                    Text("\(note.name)")
                         .font(.largeTitle.bold())
                 )
-                .position(constantPositions[number])
+                .position(constantPositions[viewModel.notes.firstIndex(of: note) ?? 0])
         }
         .scaleEffect(scaleEffect * scaleEffectGestureState)
         .offset(panDistance + panDistanceGestureState)

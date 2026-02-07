@@ -20,11 +20,11 @@ final class Slipbox: Identifiable {
     @Relationship(deleteRule: .cascade, inverse: \Note.slipbox)
     var notes: [Note] = []
     
-    var title: String
+    var name: String
     
     init(dateCreated: Date = Date.now, dateLastUpdated: Date = Date.now, title: String) {
         self.dateCreated = dateCreated
         self.dateLastUpdated = dateLastUpdated
-        self.title = title
+        self.name = title
     }
 }

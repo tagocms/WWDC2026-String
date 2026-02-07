@@ -10,35 +10,40 @@ import SwiftUI
 
 @Observable
 final class MainViewModel {
-    private var modelContext: ModelContext
-    private(set) var notes: [Note] = []
-    private(set) var slipboxes: [Slipbox] = []
+    private(set) var modelContext: ModelContext?
+    var notes: [Note] {
+        let fetchDescriptor = FetchDescriptor<Note>(sortBy: [])
+        return (try? modelContext?.fetch(fetchDescriptor)) ?? []
+    }
+    var slipboxes: [Slipbox] {
+        let fetchDescriptor = FetchDescriptor<Slipbox>(sortBy: [])
+        return (try? modelContext?.fetch(fetchDescriptor)) ?? []
+    }
     
-    init(_ modelContext: ModelContext) {
+    init(_ modelContext: ModelContext? = nil) {
         self.modelContext = modelContext
-        reloadAll()
     }
     
-    private func reloadAll() {
-        loadNotes()
-        loadSlipboxes()
+    func setModelContext(_ modelContext: ModelContext) {
+        self.modelContext = modelContext
     }
     
-    private func loadNotes(sortBy sortDescriptors: [SortDescriptor<Note>] = []) {
-        do {
-            let fetchDescriptor = FetchDescriptor<Note>(sortBy: sortDescriptors)
-            self.notes = try modelContext.fetch(fetchDescriptor)
-        } catch {
-            print(error.localizedDescription)
-        }
-    }
-    
-    private func loadSlipboxes(sortBy sortDescriptors: [SortDescriptor<Slipbox>] = []) {
-        do {
-            let fetchDescriptor = FetchDescriptor<Slipbox>(sortBy: sortDescriptors)
-            self.slipboxes = try modelContext.fetch(fetchDescriptor)
-        } catch {
-            print(error.localizedDescription)
+    func buildExampleData() {
+        if slipboxes.isEmpty, notes.isEmpty, let modelContext {
+            let slipbox = Slipbox(title: "General")
+            modelContext.insert(slipbox)
+            let firstNote = Note(slipbox: slipbox, title: "Nota 1")
+            let secondNote = Note(linkedNotes: [firstNote], slipbox: slipbox, title: "Nota 2")
+            let thirdNote = Note(linkedNotes: [firstNote, secondNote], slipbox: slipbox, title: "Nota 3")
+            let fourthNote = Note(slipbox: slipbox, title: "Nota 4")
+            let fifthNote = Note(linkedNotes: [fourthNote, thirdNote], slipbox: slipbox, title: "Nota 5")
+            modelContext.insert(firstNote)
+            modelContext.insert(secondNote)
+            modelContext.insert(thirdNote)
+            modelContext.insert(fourthNote)
+            modelContext.insert(fifthNote)
+            try? modelContext.save()
+            print(modelContext.insertedModelsArray)
         }
     }
 }
