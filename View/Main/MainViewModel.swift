@@ -10,7 +10,12 @@ import SwiftUI
 
 @Observable
 final class MainViewModel {
+    enum ViewState {
+        case map, slipboxes
+    }
+    
     private(set) var modelContext: ModelContext?
+    private(set) var viewState: ViewState
     var notes: [Note] {
         let fetchDescriptor = FetchDescriptor<Note>(sortBy: [])
         return (try? modelContext?.fetch(fetchDescriptor)) ?? []
@@ -20,8 +25,9 @@ final class MainViewModel {
         return (try? modelContext?.fetch(fetchDescriptor)) ?? []
     }
     
-    init(_ modelContext: ModelContext? = nil) {
+    init(_ modelContext: ModelContext? = nil, viewState: ViewState = .map) {
         self.modelContext = modelContext
+        self.viewState = viewState
     }
     
     func setModelContext(_ modelContext: ModelContext) {
@@ -43,7 +49,22 @@ final class MainViewModel {
             modelContext.insert(fourthNote)
             modelContext.insert(fifthNote)
             try? modelContext.save()
-            print(modelContext.insertedModelsArray)
+        }
+    }
+    
+    // MARK: - Handle big changes in View State
+    func setViewState(to viewState: ViewState) {
+        self.viewState = viewState
+    }
+    
+    func onMultitouchGesture(_ value: MultitouchGestureRecognizer.Value, perform action: () -> Void) {
+        withAnimation {
+            if value.translation.height < -50 && viewState != .slipboxes {
+                setViewState(to: .slipboxes)
+            } else if value.translation.height > 50 && viewState != .map {
+                action()
+                setViewState(to: .map)
+            }
         }
     }
 }

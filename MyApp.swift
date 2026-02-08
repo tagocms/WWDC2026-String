@@ -10,3 +10,8 @@ struct MyApp: App {
         }
     }
 }
+
+#Preview("MainView – In-Memory Store") {
+    MainView()
+        .modelContainer(for: Slipbox.self, inMemory: true)
+}

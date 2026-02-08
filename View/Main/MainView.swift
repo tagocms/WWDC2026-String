@@ -2,9 +2,11 @@ import SwiftData
 import SwiftUI
 
 struct MainView: View {
+    // MARK: - Data
     @Environment(\.modelContext) private var modelContext
     @State private var viewModel: MainViewModel = MainViewModel()
     
+    // MARK: - View UI State
     @State private var scaleEffect = 1.0
     @GestureState private var scaleEffectGestureState: CGFloat = 1
     @State private var panDistance: CGSize = CGSize.zero
@@ -12,58 +14,11 @@ struct MainView: View {
     @State private var rotation: Angle = .zero
     @GestureState private var rotationGestureState: Angle = .zero
     
-    @State private var viewState = ViewState.map
-    
     let constantPositions: [CGPoint] = (0...10).map { number in
         CGPoint(x: CGFloat(Int.random(in: 0..<900)), y: CGFloat(Int.random(in: 0..<1200)))
     }
     
-    var body: some View {
-        GeometryReader { geometry in
-            switch viewState {
-            case .map:
-                ZStack {
-                    Color.white
-                    buildRectangles(in: geometry)
-                }
-            case .slipboxes:
-                Text("SLIPBOXES")
-                    .font(Font.largeTitle.bold())
-            }
-        }
-        .background(Color.red)
-        .gesture(allGestures)
-        .onTapGesture(count: 2) {
-            zoomToFit()
-        }
-        .gesture(multitouchGesture)
-        .task {
-            if viewModel.modelContext == nil {
-                viewModel.setModelContext(modelContext)
-                viewModel.buildExampleData()
-            }
-            print(viewModel.notes)
-        }
-    }
-    
-    @ViewBuilder
-    func buildRectangles(in geometry: GeometryProxy) -> some View {
-        ForEach(viewModel.notes) { note in
-            RoundedRectangle(cornerRadius: 12)
-                .fill(.gray)
-                .aspectRatio(2/3, contentMode: .fit)
-                .frame(width: 100)
-                .overlay(
-                    Text("\(note.name)")
-                        .font(.largeTitle.bold())
-                )
-                .position(constantPositions[viewModel.notes.firstIndex(of: note) ?? 0])
-        }
-        .scaleEffect(scaleEffect * scaleEffectGestureState)
-        .offset(panDistance + panDistanceGestureState)
-        .rotationEffect(rotation + rotationGestureState)
-    }
-    
+    // MARK: - Gestures
     private var allGestures: some Gesture {
         panGesture
             .simultaneously(with: magnificationGesture)
@@ -109,15 +64,68 @@ struct MainView: View {
     private var multitouchGesture: some UIGestureRecognizerRepresentable {
         MultitouchGestureRecognizer()
             .onEnded { value in
-            withAnimation {
-                if value.translation.height < -50 && viewState != .slipboxes {
-                    viewState = .slipboxes
-                } else if value.translation.height > 50 && viewState != .map {
-                    zoomToFit()
-                    viewState = .map
+                viewModel.onMultitouchGesture(value, perform: zoomToFit)
+            }
+    }
+    
+    // MARK: - View Body
+    var body: some View {
+        GeometryReader { geometry in
+            switch viewModel.viewState {
+            case .map:
+                ZStack {
+                    Color.white
+                    buildRectangles(in: geometry)
+                    buildLines(in: geometry)
                 }
+            case .slipboxes:
+                Text("SLIPBOXES")
+                    .font(Font.largeTitle.bold())
             }
         }
+        .background(Color.red)
+        .gesture(allGestures)
+        .onTapGesture(count: 2) {
+            zoomToFit()
+        }
+        .gesture(multitouchGesture)
+        .task {
+            if viewModel.modelContext == nil {
+                viewModel.setModelContext(modelContext)
+                viewModel.buildExampleData()
+            }
+        }
+    }
+    
+    // MARK: - View UI Methods
+    @ViewBuilder
+    private func buildRectangles(in geometry: GeometryProxy) -> some View {
+        ForEach(viewModel.notes) { note in
+            RoundedRectangle(cornerRadius: 12)
+                .fill(.gray)
+                .aspectRatio(2/3, contentMode: .fit)
+                .frame(width: 100)
+                .overlay(
+                    Text("\(note.name)")
+                        .font(.largeTitle.bold())
+                )
+                .position(constantPositions[viewModel.notes.firstIndex(of: note) ?? 0])
+                .tag(note.id)
+        }
+        .scaleEffect(scaleEffect * scaleEffectGestureState)
+        .offset(panDistance + panDistanceGestureState)
+        .rotationEffect(rotation + rotationGestureState)
+        .zIndex(1000)
+    }
+    
+    @ViewBuilder
+    private func buildLines(in geometry: GeometryProxy) -> some View {
+        ForEach(viewModel.notes) { note in
+            Rectangle()
+                .frame(height: 1)
+
+        }
+        .zIndex(0)
     }
     
     private func zoomToFit() {
@@ -128,32 +136,4 @@ struct MainView: View {
             scaleEffect = 1
         }
     }
-}
-
-extension CGSize {
-    static func +(lhs: CGSize, rhs: CGSize) -> CGSize {
-        CGSize(width: lhs.width + rhs.width, height: lhs.height + rhs.height)
-    }
-    
-    static func +=(lhs: inout CGSize, rhs: CGSize) {
-        lhs = lhs + rhs
-    }
-    
-    static func *(lhs: CGSize, rhs: Angle) -> CGSize {
-        let radians: Double = rhs.radians
-        let x = lhs.width
-        let y = -lhs.height
-        let cosR = cos(radians)
-        let sinR = sin(radians)
-        
-        let newOffset = CGSize(
-            width: x * cosR - y * sinR,
-            height: -x * sinR - y * cosR
-        )
-        return newOffset
-    }
-}
-
-enum ViewState {
-    case map, slipboxes
 }
