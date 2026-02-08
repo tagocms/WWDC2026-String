@@ -17,6 +17,8 @@ final class MainViewModel {
     // MARK: - Properties
     private(set) var modelContext: ModelContext?
     private(set) var viewState: ViewState
+    
+    var selectedNote: Note?
     var notes: [Note] {
         let fetchDescriptor = FetchDescriptor<Note>(sortBy: [])
         return (try? modelContext?.fetch(fetchDescriptor)) ?? []

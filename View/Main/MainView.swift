@@ -13,6 +13,9 @@ struct MainView: View {
     @GestureState private var panDistanceGestureState: CGSize = CGSize.zero
     @State private var rotation: Angle = .zero
     @GestureState private var rotationGestureState: Angle = .zero
+    @State private var draggedNote: Note? = nil
+    @State private var noteDragOffset: CGSize = .zero
+    @GestureState private var noteDragOffsetGestureState: CGSize = .zero
     
     let constantPositions: [CGPoint] = (0...10).map { number in
         CGPoint(x: CGFloat(Int.random(in: 0..<900)), y: CGFloat(Int.random(in: 0..<1200)))
@@ -68,6 +71,24 @@ struct MainView: View {
             }
     }
     
+    private func noteDragGesture(for note: Note) -> some Gesture {
+        DragGesture()
+            .updating($noteDragOffsetGestureState) { inMotionDragValue, noteDragOffsetGestureState, _ in
+                withAnimation {
+                    if draggedNote == nil {
+                        draggedNote = note
+                    }
+                    noteDragOffsetGestureState = inMotionDragValue.translation
+                }
+            }
+            .onEnded { endingDragValue in
+                withAnimation {
+                    noteDragOffset = .zero
+                    draggedNote = nil
+                }
+            }
+    }
+    
     // MARK: - View Body
     var body: some View {
         GeometryReader { geometry in
@@ -75,8 +96,13 @@ struct MainView: View {
             case .map:
                 ZStack {
                     Color.white
-                    buildRectangles(in: geometry)
-                    buildLines(in: geometry)
+                    Group {
+                        buildRectangles(in: geometry)
+                        buildLines(in: geometry)
+                    }
+                    .scaleEffect(scaleEffect * scaleEffectGestureState)
+                    .offset(panDistance + panDistanceGestureState)
+                    .rotationEffect(rotation + rotationGestureState)
                 }
             case .slipboxes:
                 Text("SLIPBOXES")
@@ -89,6 +115,9 @@ struct MainView: View {
             zoomToFit()
         }
         .gesture(multitouchGesture)
+        .sheet(item: $viewModel.selectedNote) { note in
+            NoteView(note: note)
+        }
         .task {
             if viewModel.modelContext == nil {
                 viewModel.setModelContext(modelContext)
@@ -110,10 +139,12 @@ struct MainView: View {
                         .font(.largeTitle.bold())
                 )
                 .position(constantPositions[viewModel.notes.firstIndex(of: note) ?? 0])
+                .offset(isBeingDragged(note) ? noteDragOffsetGestureState + noteDragOffset : .zero)
+                .onTapGesture {
+                    viewModel.selectedNote = note
+                }
+                .gesture(noteDragGesture(for: note))
         }
-        .scaleEffect(scaleEffect * scaleEffectGestureState)
-        .offset(panDistance + panDistanceGestureState)
-        .rotationEffect(rotation + rotationGestureState)
         .zIndex(1000)
     }
     
@@ -122,10 +153,10 @@ struct MainView: View {
         ForEach(viewModel.notes) { note in
             ForEach(note.linkedNotes) { linkedNote in
                 Path { path in
-                    path.move(to: CGPoint(x: 0, y: 0))
-                    path.addLine(to: CGPoint(x: 200, y: 400))
+                    path.move(to: constantPositions[viewModel.notes.firstIndex(of: note) ?? 0])
+                    path.addLine(to: constantPositions[viewModel.notes.firstIndex(of: linkedNote) ?? 0])
                 }
-                .stroke(Color.blue)
+                .stroke(.purple)
             }
         }
         .zIndex(0)
@@ -138,5 +169,9 @@ struct MainView: View {
             rotation = .degrees(Double((Int(rotationNormalized) / 360) * 360))
             scaleEffect = 1
         }
+    }
+    
+    private func isBeingDragged(_ note: Note) -> Bool {
+        note == draggedNote
     }
 }
