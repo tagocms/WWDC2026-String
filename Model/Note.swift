@@ -21,7 +21,8 @@ final class Note: Identifiable {
     var backlinks: [Note] = []
     @Relationship(deleteRule: .nullify)
     var slipbox: Slipbox
-
+    
+    @Attribute(.unique)
     var name: String
     var contentBody: String
 

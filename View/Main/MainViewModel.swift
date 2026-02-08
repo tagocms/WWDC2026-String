@@ -14,6 +14,7 @@ final class MainViewModel {
         case map, slipboxes
     }
     
+    // MARK: - Properties
     private(set) var modelContext: ModelContext?
     private(set) var viewState: ViewState
     var notes: [Note] {
@@ -25,6 +26,7 @@ final class MainViewModel {
         return (try? modelContext?.fetch(fetchDescriptor)) ?? []
     }
     
+    // MARK: - Initializer functions
     init(_ modelContext: ModelContext? = nil, viewState: ViewState = .map) {
         self.modelContext = modelContext
         self.viewState = viewState
@@ -34,6 +36,7 @@ final class MainViewModel {
         self.modelContext = modelContext
     }
     
+    // MARK: - Mock data
     func buildExampleData() {
         if slipboxes.isEmpty, notes.isEmpty, let modelContext {
             let slipbox = Slipbox(title: "General")

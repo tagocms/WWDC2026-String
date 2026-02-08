@@ -20,6 +20,7 @@ final class Slipbox: Identifiable {
     @Relationship(deleteRule: .cascade, inverse: \Note.slipbox)
     var notes: [Note] = []
     
+    @Attribute(.unique)
     var name: String
     
     init(dateCreated: Date = Date.now, dateLastUpdated: Date = Date.now, title: String) {

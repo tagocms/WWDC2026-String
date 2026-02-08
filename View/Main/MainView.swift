@@ -110,7 +110,6 @@ struct MainView: View {
                         .font(.largeTitle.bold())
                 )
                 .position(constantPositions[viewModel.notes.firstIndex(of: note) ?? 0])
-                .tag(note.id)
         }
         .scaleEffect(scaleEffect * scaleEffectGestureState)
         .offset(panDistance + panDistanceGestureState)
@@ -121,9 +120,13 @@ struct MainView: View {
     @ViewBuilder
     private func buildLines(in geometry: GeometryProxy) -> some View {
         ForEach(viewModel.notes) { note in
-            Rectangle()
-                .frame(height: 1)
-
+            ForEach(note.linkedNotes) { linkedNote in
+                Path { path in
+                    path.move(to: CGPoint(x: 0, y: 0))
+                    path.addLine(to: CGPoint(x: 200, y: 400))
+                }
+                .stroke(Color.blue)
+            }
         }
         .zIndex(0)
     }
