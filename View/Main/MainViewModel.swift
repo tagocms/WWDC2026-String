@@ -59,25 +59,31 @@ final class MainViewModel {
         }
     }
     
-    // MARK: - Handle big changes in View State
+    // MARK: - Intent functions
     func setViewState(to viewState: ViewState) {
         self.viewState = viewState
     }
     
-    func onMultitouchGesture(_ value: MultitouchGestureRecognizer.Value, perform action: () -> Void) {
+    func onMultitouchGesture(_ value: MultitouchGestureRecognizer.Value, perform action: (() -> Void)? = nil) {
         withAnimation {
             if value.translation.height < -50 && viewState != .slipboxes {
                 setViewState(to: .slipboxes)
             } else if value.translation.height > 50 && viewState != .map {
-                action()
+                action?()
                 setViewState(to: .map)
             }
         }
     }
+    
+    func updateNotePosition(_ note: Note, from point: CGPoint, in geometry: GeometryProxy, panOffset: CGOffset, zoom: CGFloat, rotation: Angle) {
+        note.position = .converted(from: point, in: geometry, panOffset: panOffset, zoom: zoom, rotation: rotation)
+        
+        try? modelContext?.save()
+    }
 }
 
 extension Position {
-    func convertFromCGPoint(_ point: CGPoint, in geometry: GeometryProxy, panOffset: CGOffset, zoom: CGFloat, rotation: Angle) -> Position {
+    static func converted(from point: CGPoint, in geometry: GeometryProxy, panOffset: CGOffset, zoom: CGFloat, rotation: Angle) -> Position {
         let center = geometry.frame(in: .local).center
         let rotatedOffset = panOffset * rotation
         return Position(
@@ -86,8 +92,8 @@ extension Position {
         )
     }
     
-    func convertToCGPoint(in geometry: GeometryProxy, panOffset: CGOffset, zoom: CGFloat, rotation: Angle) -> CGPoint {
-        let center = geometry.frame(in: .local).center
+    func convertToCGPoint(in geometry: GeometryProxy? = nil, panOffset: CGOffset, zoom: CGFloat, rotation: Angle) -> CGPoint {
+        let center = geometry?.frame(in: .local).center ?? .zero
         let rotatedOffset = panOffset * rotation
         return CGPoint(x: (CGFloat(x) * zoom) + center.x + rotatedOffset.width, y: -(CGFloat(y) * zoom) + center.y + rotatedOffset.height)
     }

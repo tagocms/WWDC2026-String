@@ -13,12 +13,24 @@ struct MainView: View {
     @GestureState private var panDistanceGestureState: CGOffset = CGOffset.zero
     @State private var rotation: Angle = .zero
     @GestureState private var rotationGestureState: Angle = .zero
-    @State private var draggedNote: Note? = nil
-    @State private var noteDragOffset: CGOffset = .zero
-    @GestureState private var noteDragOffsetGestureState: CGOffset = .zero
+
+    private var totalScaleEffect: CGFloat {
+        scaleEffect * scaleEffectGestureState
+    }
+    private var totalPanDistance: CGOffset {
+        panDistance + panDistanceGestureState
+    }
+    private var totalRotation: Angle {
+        rotation + rotationGestureState
+    }
     
-    let constantPositions: [CGPoint] = (0...10).map { number in
-        CGPoint(x: CGFloat(Int.random(in: 0..<900)), y: CGFloat(Int.random(in: 0..<1200)))
+    // MARK: - Constants
+    struct Constants {
+        static let noteWidth: CGFloat = 100
+        static let aspectRatio: CGFloat = 2/3
+        static let randomPositions: [CGPoint] = (0...10).map { number in
+            CGPoint(x: CGFloat(Int.random(in: 0..<900)), y: CGFloat(Int.random(in: 0..<1200)))
+        }
     }
     
     // MARK: - Gestures
@@ -67,24 +79,20 @@ struct MainView: View {
     private var multitouchGesture: some UIGestureRecognizerRepresentable {
         MultitouchGestureRecognizer()
             .onEnded { value in
-                viewModel.onMultitouchGesture(value, perform: zoomToFit)
+                viewModel.onMultitouchGesture(value)
             }
     }
     
-    private func noteDragGesture(for note: Note) -> some Gesture {
+    private func noteDragGesture(for note: Note, in geometry: GeometryProxy) -> some Gesture {
         DragGesture()
-            .updating($noteDragOffsetGestureState) { inMotionDragValue, noteDragOffsetGestureState, _ in
+            .onChanged{ inMotionDragValue in
                 withAnimation {
-                    if draggedNote == nil {
-                        draggedNote = note
-                    }
-                    noteDragOffsetGestureState = inMotionDragValue.translation
+                    viewModel.updateNotePosition(note, from: inMotionDragValue.location, in: geometry, panOffset: totalPanDistance, zoom: totalScaleEffect, rotation: totalRotation)
                 }
             }
             .onEnded { endingDragValue in
                 withAnimation {
-                    noteDragOffset = .zero
-                    draggedNote = nil
+                    viewModel.updateNotePosition(note, from: endingDragValue.location, in: geometry, panOffset: totalPanDistance, zoom: totalScaleEffect, rotation: totalRotation)
                 }
             }
     }
@@ -92,58 +100,64 @@ struct MainView: View {
     // MARK: - View Body
     var body: some View {
         GeometryReader { geometry in
-            switch viewModel.viewState {
-            case .map:
-                ZStack {
-                    Color.white
-                    Group {
-                        buildRectangles(in: geometry)
-                        buildLines(in: geometry)
+            Group {
+                switch viewModel.viewState {
+                case .map:
+                    ZStack {
+                        Color.white
+                        Group {
+                            buildNotes(in: geometry)
+                            buildLines(in: geometry)
+                        }
+                        .scaleEffect(totalScaleEffect)
+                        .offset(totalPanDistance)
+                        .rotationEffect(totalRotation)
                     }
-                    .scaleEffect(scaleEffect * scaleEffectGestureState)
-                    .offset(panDistance + panDistanceGestureState)
-                    .rotationEffect(rotation + rotationGestureState)
+                case .slipboxes:
+                    Text("SLIPBOXES")
+                        .font(Font.largeTitle.bold())
                 }
-            case .slipboxes:
-                Text("SLIPBOXES")
-                    .font(Font.largeTitle.bold())
+            }
+            .gesture(allGestures)
+            .onTapGesture(count: 2) {
+                zoomToFit(in: geometry)
+            }
+            .gesture(multitouchGesture)
+            .task {
+                if viewModel.modelContext == nil {
+                    viewModel.setModelContext(modelContext)
+                    viewModel.buildExampleData()
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    zoomToFit(in: geometry)
+                }
             }
         }
         .background(Color.red)
-        .gesture(allGestures)
-        .onTapGesture(count: 2) {
-            zoomToFit()
-        }
-        .gesture(multitouchGesture)
         .sheet(item: $viewModel.selectedNote) { note in
             NoteView(note: note)
         }
-        .task {
-            if viewModel.modelContext == nil {
-                viewModel.setModelContext(modelContext)
-                viewModel.buildExampleData()
-            }
-        }
+        
     }
     
     // MARK: - View UI Methods
     @ViewBuilder
-    private func buildRectangles(in geometry: GeometryProxy) -> some View {
+    private func buildNotes(in geometry: GeometryProxy) -> some View {
         ForEach(viewModel.notes) { note in
             RoundedRectangle(cornerRadius: 12)
                 .fill(.gray)
-                .aspectRatio(2/3, contentMode: .fit)
-                .frame(width: 100)
+                .aspectRatio(Constants.aspectRatio, contentMode: .fit)
+                .frame(width: Constants.noteWidth)
                 .overlay(
                     Text("\(note.name)")
                         .font(.largeTitle.bold())
                 )
-                .position(constantPositions[viewModel.notes.firstIndex(of: note) ?? 0])
-                .offset(isBeingDragged(note) ? noteDragOffsetGestureState + noteDragOffset : .zero)
+                .position(note.position.convertToCGPoint(in: geometry, panOffset: totalPanDistance, zoom: totalScaleEffect, rotation: totalRotation))
+//                .offset(isBeingDragged(note) ? noteDragOffsetGestureState : .zero)
                 .onTapGesture {
                     viewModel.selectedNote = note
                 }
-                .gesture(noteDragGesture(for: note))
+                .gesture(noteDragGesture(for: note, in: geometry))
         }
         .zIndex(1000)
     }
@@ -153,8 +167,8 @@ struct MainView: View {
         ForEach(viewModel.notes) { note in
             ForEach(note.linkedNotes) { linkedNote in
                 Path { path in
-                    path.move(to: constantPositions[viewModel.notes.firstIndex(of: note) ?? 0])
-                    path.addLine(to: constantPositions[viewModel.notes.firstIndex(of: linkedNote) ?? 0])
+                    path.move(to: note.position.convertToCGPoint(in: geometry, panOffset: totalPanDistance, zoom: totalScaleEffect, rotation: totalRotation))
+                    path.addLine(to: linkedNote.position.convertToCGPoint(in: geometry, panOffset: totalPanDistance, zoom: totalScaleEffect, rotation: totalRotation))
                 }
                 .stroke(.purple)
             }
@@ -162,16 +176,43 @@ struct MainView: View {
         .zIndex(0)
     }
     
-    private func zoomToFit() {
+    private func zoomToFit(in geometry: GeometryProxy) {
         let rotationNormalized = rotation.degrees.isNormal ? rotation.degrees : 0
         withAnimation {
             panDistance = .zero
             rotation = .degrees(Double((Int(rotationNormalized) / 360) * 360))
-            scaleEffect = 1
+            
+            let bbox = boundingBoxForMap
+            if bbox.size.width > 0, bbox.size.height > 0,
+               geometry.size.width > 0, geometry.size.height > 0 {
+                let hZoom = geometry.size.width / bbox.size.width
+                let vZoom = geometry.size.height / bbox.size.height
+                print(hZoom)
+                print(vZoom)
+                scaleEffect = min(hZoom, vZoom)
+            }
+            
         }
     }
     
-    private func isBeingDragged(_ note: Note) -> Bool {
-        note == draggedNote
+    // MARK: - UI Size methods
+    private func boundingBox(for note: Note) -> CGRect {
+        let bbox = CGRect(
+            center: note.position.convertToCGPoint(panOffset: totalPanDistance, zoom: 1, rotation: totalRotation),
+            size: CGSize(
+                width: Constants.noteWidth,
+                height: Constants.noteWidth / Constants.aspectRatio)
+        )
+        print(bbox)
+        return bbox
+    }
+    
+    private var boundingBoxForMap: CGRect {
+        var boundingBox = CGRect.zero
+        for note in viewModel.notes {
+            boundingBox = boundingBox.union(self.boundingBox(for: note))
+        }
+        print(boundingBox)
+        return boundingBox
     }
 }
