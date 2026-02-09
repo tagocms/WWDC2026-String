@@ -9,13 +9,13 @@ struct MainView: View {
     // MARK: - View UI State
     @State private var scaleEffect = 1.0
     @GestureState private var scaleEffectGestureState: CGFloat = 1
-    @State private var panDistance: CGSize = CGSize.zero
-    @GestureState private var panDistanceGestureState: CGSize = CGSize.zero
+    @State private var panDistance: CGOffset = CGOffset.zero
+    @GestureState private var panDistanceGestureState: CGOffset = CGOffset.zero
     @State private var rotation: Angle = .zero
     @GestureState private var rotationGestureState: Angle = .zero
     @State private var draggedNote: Note? = nil
-    @State private var noteDragOffset: CGSize = .zero
-    @GestureState private var noteDragOffsetGestureState: CGSize = .zero
+    @State private var noteDragOffset: CGOffset = .zero
+    @GestureState private var noteDragOffsetGestureState: CGOffset = .zero
     
     let constantPositions: [CGPoint] = (0...10).map { number in
         CGPoint(x: CGFloat(Int.random(in: 0..<900)), y: CGFloat(Int.random(in: 0..<1200)))

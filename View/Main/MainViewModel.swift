@@ -8,6 +8,8 @@
 import SwiftData
 import SwiftUI
 
+typealias Position = Note.Position
+
 @Observable
 final class MainViewModel {
     enum ViewState {
@@ -71,5 +73,22 @@ final class MainViewModel {
                 setViewState(to: .map)
             }
         }
+    }
+}
+
+extension Position {
+    func convertFromCGPoint(_ point: CGPoint, in geometry: GeometryProxy, panOffset: CGOffset, zoom: CGFloat, rotation: Angle) -> Position {
+        let center = geometry.frame(in: .local).center
+        let rotatedOffset = panOffset * rotation
+        return Position(
+            x: Int((point.x - center.x - rotatedOffset.width) / zoom),
+            y: Int(-(point.y - center.y - rotatedOffset.height) / zoom)
+        )
+    }
+    
+    func convertToCGPoint(in geometry: GeometryProxy, panOffset: CGOffset, zoom: CGFloat, rotation: Angle) -> CGPoint {
+        let center = geometry.frame(in: .local).center
+        let rotatedOffset = panOffset * rotation
+        return CGPoint(x: (CGFloat(x) * zoom) + center.x + rotatedOffset.width, y: -(CGFloat(y) * zoom) + center.y + rotatedOffset.height)
     }
 }

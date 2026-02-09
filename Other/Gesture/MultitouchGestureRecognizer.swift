@@ -12,8 +12,8 @@ struct MultitouchGestureRecognizer: UIGestureRecognizerRepresentable {
     struct Value: Equatable, Sendable {
         var location: CGPoint
         var startLocation: CGPoint
-        var translation: CGSize {
-            CGSize(width: location.x - startLocation.x, height: location.y - startLocation.y)
+        var translation: CGOffset {
+            CGOffset(width: location.x - startLocation.x, height: location.y - startLocation.y)
         }
         
         static func == (lhs: Self, rhs: Self) -> Bool {

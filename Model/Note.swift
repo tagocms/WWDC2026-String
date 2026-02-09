@@ -10,6 +10,12 @@ import SwiftData
 
 @Model
 final class Note: Identifiable {
+    struct Position: Codable {
+        var x: Int
+        var y: Int
+        static let zero = Self(x: 0, y: 0)
+    }
+    
     var dateCreated: Date
     var dateLastUpdated: Date
 
@@ -25,6 +31,7 @@ final class Note: Identifiable {
     @Attribute(.unique)
     var name: String
     var contentBody: String
+    var position: Position
 
     init(
         dateCreated: Date = Date.now,
@@ -33,7 +40,8 @@ final class Note: Identifiable {
         linkedNotes: [Note] = [],
         slipbox: Slipbox,
         title: String,
-        contentBody: String = ""
+        contentBody: String = "",
+        position: Position = .zero
     ) {
         self.dateCreated = dateCreated
         self.dateLastUpdated = dateLastUpdated
@@ -42,5 +50,6 @@ final class Note: Identifiable {
         self.slipbox = slipbox
         self.name = title
         self.contentBody = contentBody
+        self.position = position
     }
 }
