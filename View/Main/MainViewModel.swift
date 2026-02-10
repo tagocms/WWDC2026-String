@@ -92,9 +92,12 @@ extension Position {
         )
     }
     
-    func convertToCGPoint(in geometry: GeometryProxy? = nil, panOffset: CGOffset, zoom: CGFloat, rotation: Angle) -> CGPoint {
+    func convertToCGPoint(in geometry: GeometryProxy? = nil, panOffset: CGOffset = .zero, zoom: CGFloat = 1, rotation: Angle = .zero) -> CGPoint {
         let center = geometry?.frame(in: .local).center ?? .zero
         let rotatedOffset = panOffset * rotation
-        return CGPoint(x: (CGFloat(x) * zoom) + center.x + rotatedOffset.width, y: -(CGFloat(y) * zoom) + center.y + rotatedOffset.height)
+        return CGPoint(
+            x: (CGFloat(x) * zoom) + center.x + rotatedOffset.width,
+            y: -(CGFloat(y) * zoom) + center.y + rotatedOffset.height
+        )
     }
 }

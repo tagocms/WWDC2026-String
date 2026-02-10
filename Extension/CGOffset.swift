@@ -31,4 +31,8 @@ extension CGOffset {
         )
         return newOffset
     }
+    
+    static func *(lhs: CGOffset, rhs: CGFloat) -> CGOffset {
+        .init(width: lhs.width * rhs, height: lhs.height * rhs)
+    }
 }

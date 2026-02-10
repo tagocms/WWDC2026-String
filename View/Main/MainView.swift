@@ -6,6 +6,19 @@ struct MainView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var viewModel: MainViewModel = MainViewModel()
     
+    // MARK: - Constants
+    struct Constants {
+        static let noteWidth: CGFloat = 100
+        static let aspectRatio: CGFloat = 2/3
+        static let randomPositions: [CGPoint] = (0...10).map { number in
+            CGPoint(x: CGFloat(Int.random(in: 0..<900)), y: CGFloat(Int.random(in: 0..<1200)))
+        }
+        static let cardSize: CGSize = CGSize(
+            width: Constants.noteWidth,
+            height: Constants.noteWidth / Constants.aspectRatio
+        )
+    }
+    
     // MARK: - View UI State
     @State private var scaleEffect = 1.0
     @GestureState private var scaleEffectGestureState: CGFloat = 1
@@ -13,7 +26,7 @@ struct MainView: View {
     @GestureState private var panDistanceGestureState: CGOffset = CGOffset.zero
     @State private var rotation: Angle = .zero
     @GestureState private var rotationGestureState: Angle = .zero
-
+    
     private var totalScaleEffect: CGFloat {
         scaleEffect * scaleEffectGestureState
     }
@@ -22,15 +35,6 @@ struct MainView: View {
     }
     private var totalRotation: Angle {
         rotation + rotationGestureState
-    }
-    
-    // MARK: - Constants
-    struct Constants {
-        static let noteWidth: CGFloat = 100
-        static let aspectRatio: CGFloat = 2/3
-        static let randomPositions: [CGPoint] = (0...10).map { number in
-            CGPoint(x: CGFloat(Int.random(in: 0..<900)), y: CGFloat(Int.random(in: 0..<1200)))
-        }
     }
     
     // MARK: - Gestures
@@ -56,11 +60,11 @@ struct MainView: View {
         DragGesture()
             .updating($panDistanceGestureState) { inMotionPanDistance, panDistanceGestureState, _ in
                 withAnimation {
-                    panDistanceGestureState = inMotionPanDistance.translation * rotation
+                    panDistanceGestureState = inMotionPanDistance.translation
                 }
             }
             .onEnded { endingPanDistance in
-                panDistance += endingPanDistance.translation * rotation
+                panDistance += endingPanDistance.translation
             }
     }
     
@@ -110,8 +114,8 @@ struct MainView: View {
                             buildLines(in: geometry)
                         }
                         .scaleEffect(totalScaleEffect)
-                        .offset(totalPanDistance)
                         .rotationEffect(totalRotation)
+                        .offset(totalPanDistance)
                     }
                 case .slipboxes:
                     Text("SLIPBOXES")
@@ -124,10 +128,6 @@ struct MainView: View {
             }
             .gesture(multitouchGesture)
             .task {
-                if viewModel.modelContext == nil {
-                    viewModel.setModelContext(modelContext)
-                    viewModel.buildExampleData()
-                }
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                     zoomToFit(in: geometry)
                 }
@@ -136,6 +136,12 @@ struct MainView: View {
         .background(Color.red)
         .sheet(item: $viewModel.selectedNote) { note in
             NoteView(note: note)
+        }
+        .task {
+            if viewModel.modelContext == nil {
+                viewModel.setModelContext(modelContext)
+                viewModel.buildExampleData()
+            }
         }
         
     }
@@ -153,7 +159,6 @@ struct MainView: View {
                         .font(.largeTitle.bold())
                 )
                 .position(note.position.convertToCGPoint(in: geometry, panOffset: totalPanDistance, zoom: totalScaleEffect, rotation: totalRotation))
-//                .offset(isBeingDragged(note) ? noteDragOffsetGestureState : .zero)
                 .onTapGesture {
                     viewModel.selectedNote = note
                 }
@@ -183,27 +188,33 @@ struct MainView: View {
             rotation = .degrees(Double((Int(rotationNormalized) / 360) * 360))
             
             let bbox = boundingBoxForMap
-            if bbox.size.width > 0, bbox.size.height > 0,
-               geometry.size.width > 0, geometry.size.height > 0 {
-                let hZoom = geometry.size.width / bbox.size.width
-                let vZoom = geometry.size.height / bbox.size.height
-                print(hZoom)
-                print(vZoom)
-                scaleEffect = min(hZoom, vZoom)
-            }
+            let geometryFrame = geometry.frame(in: .local)
             
+            print(bbox)
+            print(geometryFrame)
+            
+            guard bbox.width > 0,
+                  bbox.height > 0,
+                  geometryFrame.width > 0,
+                  geometryFrame.height > 0 else { return }
+            
+            let hZoom = geometryFrame.width / bbox.width
+            let vZoom = geometryFrame.height / bbox.height
+            scaleEffect = min(hZoom, vZoom)
+            // TODO: - Acredito que o problema esteja em como estou convertendo as posições, de forma que a geometria "sempre" vai ficar menor do que a tela e não será possível centralizar, principalmente se tivermos muitas anotações - preciso arrumar isso.
         }
     }
     
     // MARK: - UI Size methods
     private func boundingBox(for note: Note) -> CGRect {
         let bbox = CGRect(
-            center: note.position.convertToCGPoint(panOffset: totalPanDistance, zoom: 1, rotation: totalRotation),
-            size: CGSize(
-                width: Constants.noteWidth,
-                height: Constants.noteWidth / Constants.aspectRatio)
+            center: note.position.convertToCGPoint(),
+            size: Constants.cardSize
         )
-        print(bbox)
+        print()
+        print("Bounding box for note \(note.name): \(bbox)")
+        print("Real positions for note \(note.name): x - \(note.position.x); y - \(note.position.y)")
+        print()
         return bbox
     }
     
@@ -212,7 +223,6 @@ struct MainView: View {
         for note in viewModel.notes {
             boundingBox = boundingBox.union(self.boundingBox(for: note))
         }
-        print(boundingBox)
         return boundingBox
     }
 }
