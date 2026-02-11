@@ -10,12 +10,18 @@ import SwiftData
 @Model
 final class Tag: Identifiable {
     @Attribute(.unique)
-    var name: String
+    private(set) var name: String
     
     @Relationship(deleteRule: .nullify,)
-    var notes: [Note] = []
+    private(set) var notes: [Note] = []
     
     init(title: String) {
         self.name = title
+    }
+}
+
+extension Tag: Comparable {
+    static func < (lhs: Tag, rhs: Tag) -> Bool {
+        lhs.name < rhs.name
     }
 }

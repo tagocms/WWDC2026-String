@@ -23,11 +23,11 @@ final class MainViewModel {
     var selectedNote: Note?
     var notes: [Note] {
         let fetchDescriptor = FetchDescriptor<Note>(sortBy: [])
-        return (try? modelContext?.fetch(fetchDescriptor)) ?? []
+        return ((try? modelContext?.fetch(fetchDescriptor)) ?? []).sorted()
     }
     var slipboxes: [Slipbox] {
         let fetchDescriptor = FetchDescriptor<Slipbox>(sortBy: [])
-        return (try? modelContext?.fetch(fetchDescriptor)) ?? []
+        return ((try? modelContext?.fetch(fetchDescriptor)) ?? []).sorted()
     }
     
     // MARK: - Initializer functions
@@ -76,9 +76,38 @@ final class MainViewModel {
     }
     
     func updateNotePosition(_ note: Note, to point: CGPoint, in geometry: GeometryProxy, panOffset: CGOffset, zoom: CGFloat, rotation: Angle) {
-        note.position = .converted(from: point, in: geometry, panOffset: panOffset, zoom: zoom, rotation: rotation)
-        
+        note.updatePosition(to: .converted(from: point, in: geometry, panOffset: panOffset, zoom: zoom, rotation: rotation))
         try? modelContext?.save()
+    }
+    
+    func createNewNote(in slipbox: Slipbox) {
+        var title = "Untitled"
+        var noteNumber = 0
+        notes.forEach { note in
+            if title == note.name {
+                noteNumber += 1
+                title = "Untitled " + String((noteNumber))
+            }
+        }
+        
+        let note = Note(slipbox: slipbox, title: title)
+        modelContext?.insert(note)
+        try? modelContext?.save()
+        
+        // TODO: fetch do swift Data (insert do seu elemento no array)
+    }
+    
+    func delete(_ note: Note) {
+        modelContext?.delete(note)
+        try? modelContext?.save()
+    }
+    
+    func setLink(from note: Note, to possibleLink: Note) {
+        note.addLink(to: possibleLink)
+    }
+    
+    func removeLink(from note: Note, to link: Note) {
+        note.removeLink(to: link)
     }
 }
 

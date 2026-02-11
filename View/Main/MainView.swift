@@ -109,12 +109,13 @@ struct MainView: View {
                     // TODO: - Alterar a cor para modo escuro
                     Color.white
                     Group {
-                        buildNotes(in: geometry)
                         buildLines(in: geometry)
+                        buildNotes(in: geometry)
                     }
                     .scaleEffect(totalScaleEffect, anchor: .center)
                     .rotationEffect(totalRotation, anchor: .center)
                     .offset(totalPanDistance)
+                    
                     dockBar
                 }
             }
@@ -144,15 +145,40 @@ struct MainView: View {
     
     @ViewBuilder
     private var dockBar: some View {
-        HStack {
+        HStack(alignment: .center) {
             ForEach(viewModel.slipboxes) { slipbox in
                 Button {
                     //
                 } label: {
-                    Label(slipbox.name, systemImage: "folder")
+                    VStack {
+                        Image(systemName: "folder")
+                            .font(.largeTitle)
+                        Text(slipbox.name)
+                            .font(.headline.bold())
+                    }
+                }
+            }
+            
+            Divider()
+                .padding(.horizontal, 8)
+                .frame(height: 44)
+            
+            Button {
+                if let slipbox = viewModel.slipboxes.first {
+                    viewModel.createNewNote(in: slipbox)
+                }
+            } label: {
+                VStack {
+                    Image(systemName: "plus")
+                        .font(.largeTitle)
+                    Text("Create new note")
+                        .font(.headline.bold())
                 }
             }
         }
+        .padding()
+        .background(.ultraThinMaterial)
+        .clipShape(.buttonBorder)
         .padding()
     }
     
@@ -168,13 +194,33 @@ struct MainView: View {
                     Text("\(note.name)")
                         .font(.largeTitle.bold())
                 )
+                .contextMenu {
+                    Menu("Link note to", systemImage: "link") {
+                        ForEach(viewModel.notes) { possibleLink in
+                            if note != possibleLink {
+                                Button(possibleLink.name) {
+                                    viewModel.setLink(from: note, to: possibleLink)
+                                }
+                            }
+                        }
+                    }
+                    Menu("Remove link to", systemImage: "nosign") {
+                        ForEach(note.linkedNotes.sorted()) { link in
+                            Button(link.name, role: .cancel) {
+                                viewModel.removeLink(from: note, to: link)
+                            }
+                        }
+                    }
+                    Button("Delete note", systemImage: "trash", role: .destructive) {
+                        viewModel.delete(note)
+                    }
+                }
                 .position(note.position.convertToCGPoint(in: geometry))
                 .onTapGesture {
                     viewModel.selectedNote = note
                 }
                 .gesture(noteDragGesture(for: note, in: geometry))
         }
-        .zIndex(1000)
     }
     
     @ViewBuilder
@@ -188,7 +234,6 @@ struct MainView: View {
                 .stroke(.purple)
             }
         }
-        .zIndex(0)
     }
     
     private func zoomToFit(in geometry: GeometryProxy) {

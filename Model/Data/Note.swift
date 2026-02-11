@@ -10,28 +10,29 @@ import SwiftData
 
 @Model
 final class Note: Identifiable {
+    // MARK: - Model initializers and properties
     struct Position: Codable {
         var x: Int
         var y: Int
         static let zero = Self(x: 0, y: 0)
     }
     
-    var dateCreated: Date
-    var dateLastUpdated: Date
+    private(set) var dateCreated: Date
+    private(set) var dateLastUpdated: Date
 
     @Relationship(deleteRule: .nullify, inverse: \Tag.notes)
-    var tags: [Tag]
+    private(set) var tags: [Tag]
     @Relationship(deleteRule: .nullify, inverse: \Note.backlinks)
-    var linkedNotes: [Note]
+    private(set) var linkedNotes: [Note]
     @Relationship(deleteRule: .nullify)
-    var backlinks: [Note] = []
+    private(set) var backlinks: [Note] = []
     @Relationship(deleteRule: .nullify)
-    var slipbox: Slipbox
+    private(set) var slipbox: Slipbox
     
     @Attribute(.unique)
-    var name: String
-    var contentBody: String
-    var position: Position
+    private(set) var name: String
+    private(set) var contentBody: String
+    private(set) var position: Position
 
     init(
         dateCreated: Date = Date.now,
@@ -51,5 +52,25 @@ final class Note: Identifiable {
         self.name = title
         self.contentBody = contentBody
         self.position = position
+    }
+    
+    // MARK: - Setter methods
+    func updatePosition(to position: Position) {
+        self.position = position
+    }
+    
+    func addLink(to note: Note) {
+        self.linkedNotes.append(note)
+    }
+    
+    func removeLink(to note: Note) {
+        guard let index = self.linkedNotes.firstIndex(of: note) else { return }
+        self.linkedNotes.remove(at: index)
+    }
+}
+
+extension Note: Comparable {
+    static func <(lhs: Note, rhs: Note) -> Bool {
+        lhs.name < rhs.name
     }
 }
