@@ -91,12 +91,12 @@ struct MainView: View {
         DragGesture()
             .onChanged{ inMotionDragValue in
                 withAnimation {
-                    viewModel.updateNotePosition(note, from: inMotionDragValue.location, in: geometry, panOffset: totalPanDistance, zoom: totalScaleEffect, rotation: totalRotation)
+                    viewModel.updateNotePosition(note, to: inMotionDragValue.location, in: geometry, panOffset: .zero, zoom: 1, rotation: .zero)
                 }
             }
             .onEnded { endingDragValue in
                 withAnimation {
-                    viewModel.updateNotePosition(note, from: endingDragValue.location, in: geometry, panOffset: totalPanDistance, zoom: totalScaleEffect, rotation: totalRotation)
+                    viewModel.updateNotePosition(note, to: endingDragValue.location, in: geometry, panOffset: .zero, zoom: 1, rotation: .zero)
                 }
             }
     }
@@ -105,21 +105,17 @@ struct MainView: View {
     var body: some View {
         GeometryReader { geometry in
             Group {
-                switch viewModel.viewState {
-                case .map:
-                    ZStack {
-                        Color.white
-                        Group {
-                            buildNotes(in: geometry)
-                            buildLines(in: geometry)
-                        }
-                        .scaleEffect(totalScaleEffect)
-                        .rotationEffect(totalRotation)
-                        .offset(totalPanDistance)
+                ZStack(alignment: .bottom) {
+                    // TODO: - Alterar a cor para modo escuro
+                    Color.white
+                    Group {
+                        buildNotes(in: geometry)
+                        buildLines(in: geometry)
                     }
-                case .slipboxes:
-                    Text("SLIPBOXES")
-                        .font(Font.largeTitle.bold())
+                    .scaleEffect(totalScaleEffect, anchor: .center)
+                    .rotationEffect(totalRotation, anchor: .center)
+                    .offset(totalPanDistance)
+                    dockBar
                 }
             }
             .gesture(allGestures)
@@ -146,6 +142,20 @@ struct MainView: View {
         
     }
     
+    @ViewBuilder
+    private var dockBar: some View {
+        HStack {
+            ForEach(viewModel.slipboxes) { slipbox in
+                Button {
+                    //
+                } label: {
+                    Label(slipbox.name, systemImage: "folder")
+                }
+            }
+        }
+        .padding()
+    }
+    
     // MARK: - View UI Methods
     @ViewBuilder
     private func buildNotes(in geometry: GeometryProxy) -> some View {
@@ -158,7 +168,7 @@ struct MainView: View {
                     Text("\(note.name)")
                         .font(.largeTitle.bold())
                 )
-                .position(note.position.convertToCGPoint(in: geometry, panOffset: totalPanDistance, zoom: totalScaleEffect, rotation: totalRotation))
+                .position(note.position.convertToCGPoint(in: geometry))
                 .onTapGesture {
                     viewModel.selectedNote = note
                 }
@@ -172,8 +182,8 @@ struct MainView: View {
         ForEach(viewModel.notes) { note in
             ForEach(note.linkedNotes) { linkedNote in
                 Path { path in
-                    path.move(to: note.position.convertToCGPoint(in: geometry, panOffset: totalPanDistance, zoom: totalScaleEffect, rotation: totalRotation))
-                    path.addLine(to: linkedNote.position.convertToCGPoint(in: geometry, panOffset: totalPanDistance, zoom: totalScaleEffect, rotation: totalRotation))
+                    path.move(to: note.position.convertToCGPoint(in: geometry))
+                    path.addLine(to: linkedNote.position.convertToCGPoint(in: geometry))
                 }
                 .stroke(.purple)
             }
@@ -188,7 +198,7 @@ struct MainView: View {
             rotation = .degrees(Double((Int(rotationNormalized) / 360) * 360))
             
             let bbox = boundingBoxForMap
-            let geometryFrame = geometry.frame(in: .local)
+            let geometryFrame = geometry.frame(in: .local).insetBy(dx: Constants.cardSize.width, dy: Constants.cardSize.height)
             
             print(bbox)
             print(geometryFrame)
@@ -200,8 +210,7 @@ struct MainView: View {
             
             let hZoom = geometryFrame.width / bbox.width
             let vZoom = geometryFrame.height / bbox.height
-            scaleEffect = min(hZoom, vZoom)
-            // TODO: - Acredito que o problema esteja em como estou convertendo as posições, de forma que a geometria "sempre" vai ficar menor do que a tela e não será possível centralizar, principalmente se tivermos muitas anotações - preciso arrumar isso.
+            scaleEffect = min(min(hZoom, vZoom), 2)
         }
     }
     

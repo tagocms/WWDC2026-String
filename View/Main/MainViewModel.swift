@@ -75,7 +75,7 @@ final class MainViewModel {
         }
     }
     
-    func updateNotePosition(_ note: Note, from point: CGPoint, in geometry: GeometryProxy, panOffset: CGOffset, zoom: CGFloat, rotation: Angle) {
+    func updateNotePosition(_ note: Note, to point: CGPoint, in geometry: GeometryProxy, panOffset: CGOffset, zoom: CGFloat, rotation: Angle) {
         note.position = .converted(from: point, in: geometry, panOffset: panOffset, zoom: zoom, rotation: rotation)
         
         try? modelContext?.save()
