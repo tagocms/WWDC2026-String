@@ -9,12 +9,16 @@ import Foundation
 import SwiftData
 
 @Model
-final class Note: Identifiable {
+final class Note: Identifiable, Named {
     // MARK: - Model initializers and properties
     struct Position: Codable {
         var x: Int
         var y: Int
         static let zero = Self(x: 0, y: 0)
+        
+        func distance(to point: Position) -> Float {
+            sqrt(pow(Float(self.x - point.x), 2) + pow(Float(self.y - point.y), 2))
+        }
     }
     
     private(set) var dateCreated: Date
@@ -72,5 +76,11 @@ final class Note: Identifiable {
 extension Note: Comparable {
     static func <(lhs: Note, rhs: Note) -> Bool {
         lhs.name < rhs.name
+    }
+}
+
+extension Note: Equatable {
+    static func ==(lhs: Note, rhs: Note) -> Bool {
+        lhs.id == rhs.id
     }
 }

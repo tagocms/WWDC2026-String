@@ -19,6 +19,7 @@ final class MainViewModel {
     // MARK: - Properties
     private(set) var modelContext: ModelContext?
     private(set) var viewState: ViewState
+    private(set) var isInExploringMode: Bool = false
     
     var selectedNote: Note?
     var notes: [Note] {
@@ -64,6 +65,10 @@ final class MainViewModel {
         self.viewState = viewState
     }
     
+    func toggleExploringMode() {
+        self.isInExploringMode.toggle()
+    }
+    
     func onMultitouchGesture(_ value: MultitouchGestureRecognizer.Value, perform action: (() -> Void)? = nil) {
         withAnimation {
             if value.translation.height < -50 && viewState != .slipboxes {
@@ -81,33 +86,68 @@ final class MainViewModel {
     }
     
     func createNewNote(in slipbox: Slipbox) {
-        var title = "Untitled"
-        var noteNumber = 0
-        notes.forEach { note in
-            if title == note.name {
-                noteNumber += 1
-                title = "Untitled " + String((noteNumber))
-            }
-        }
-        
+        let title = nameWithoutDuplicates(for: notes)
         let note = Note(slipbox: slipbox, title: title)
-        modelContext?.insert(note)
-        try? modelContext?.save()
+        createAndSaveToModelContext(note)
         
         // TODO: fetch do swift Data (insert do seu elemento no array)
     }
     
     func delete(_ note: Note) {
-        modelContext?.delete(note)
-        try? modelContext?.save()
+        deleteAndSaveToModelContext(note)
     }
     
     func setLink(from note: Note, to possibleLink: Note) {
         note.addLink(to: possibleLink)
     }
     
+    func setDraggedLink(from note: Note, to location: CGPoint, noteSize: CGSize) {
+        // TODO: - Arrumar
+        var closestNote: Note? = nil
+        var closestDistance: Float? = nil
+        notes.forEach { possibleLink in
+            let currentDistance = possibleLink.position.distance(to: note.position)
+            if closestDistance ?? 0 > currentDistance || closestDistance == nil {
+                closestDistance = currentDistance
+                closestNote = note
+            }
+        }
+        guard let closestNote, closestDistance != nil else { return }
+        setLink(from: note, to: closestNote)
+    }
+    
     func removeLink(from note: Note, to link: Note) {
         note.removeLink(to: link)
+    }
+    
+    func createNewSlipbox() {
+        let title = nameWithoutDuplicates(for: slipboxes)
+        let slipbox = Slipbox(title: title)
+        createAndSaveToModelContext(slipbox)
+    }
+    
+    // MARK: - Auxiliary methods
+    private func nameWithoutDuplicates<T: Named>(for collection: [T]) -> String {
+        var name = "Untitled"
+        var number = 0
+        collection.forEach { item in
+            if name == item.name {
+                number += 1
+                name = "Untitled " + String((number))
+            }
+        }
+        
+        return name
+    }
+    
+    private func createAndSaveToModelContext<T: PersistentModel>(_ item: T) {
+        modelContext?.insert(item)
+        try? modelContext?.save()
+    }
+    
+    private func deleteAndSaveToModelContext<T: PersistentModel>(_ item: T) {
+        modelContext?.delete(item)
+        try? modelContext?.save()
     }
 }
 

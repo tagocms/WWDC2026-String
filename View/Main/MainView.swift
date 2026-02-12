@@ -37,6 +37,11 @@ struct MainView: View {
         rotation + rotationGestureState
     }
     
+    // MARK: - Settings State
+    @State private var isShowingSettings: Bool = false
+    @AppStorage("isShowingUIControls") private var isShowingUIControls: Bool = true
+    @AppStorage("isUI3D") private var isUI3D: Bool = false
+    
     // MARK: - Gestures
     private var allGestures: some Gesture {
         panGesture
@@ -90,89 +95,126 @@ struct MainView: View {
     private func noteDragGesture(for note: Note, in geometry: GeometryProxy) -> some Gesture {
         DragGesture()
             .onChanged{ inMotionDragValue in
-                withAnimation {
-                    viewModel.updateNotePosition(note, to: inMotionDragValue.location, in: geometry, panOffset: .zero, zoom: 1, rotation: .zero)
+                withAnimation(.smooth) {
+                    if viewModel.isInExploringMode {
+                        viewModel.updateNotePosition(note, to: inMotionDragValue.location, in: geometry, panOffset: .zero, zoom: 1, rotation: .zero)
+                    } else {
+                        //
+                    }
+                        
                 }
             }
             .onEnded { endingDragValue in
-                withAnimation {
-                    viewModel.updateNotePosition(note, to: endingDragValue.location, in: geometry, panOffset: .zero, zoom: 1, rotation: .zero)
+                withAnimation(.smooth) {
+                    if viewModel.isInExploringMode {
+                        viewModel.updateNotePosition(note, to: endingDragValue.location, in: geometry, panOffset: .zero, zoom: 1, rotation: .zero)
+                    } else {
+                        //
+                        viewModel.setDraggedLink(from: note, to: endingDragValue.location, noteSize: Constants.cardSize)
+                    }
                 }
             }
     }
     
     // MARK: - View Body
     var body: some View {
-        GeometryReader { geometry in
-            Group {
-                ZStack(alignment: .bottom) {
-                    // TODO: - Alterar a cor para modo escuro
-                    Color.white
-                    Group {
-                        buildLines(in: geometry)
-                        buildNotes(in: geometry)
+        NavigationStack {
+            GeometryReader { geometry in
+                Group {
+                    ZStack(alignment: .topTrailing) {
+                        ZStack(alignment: .bottom) {
+                            // TODO: - Alterar a cor para modo escuro
+                            Color.appBackground
+                            Group {
+                                buildNotes(in: geometry)
+                            }
+                            .scaleEffect(totalScaleEffect, anchor: .center)
+                            .rotationEffect(totalRotation, anchor: .center)
+                            .offset(totalPanDistance)
+                            
+                            dockBar
+                        }
+                        .ignoresSafeArea()
+                        
+                        Button {
+                            viewModel.toggleExploringMode()
+                        } label: {
+                            if viewModel.isInExploringMode {
+                                IconAndTextView(iconName: "hand.draw", text: "Explore")
+                            } else {
+                                IconAndTextView(iconName: "link", text: "Link")
+                            }
+                        }
+                        .padding()
                     }
-                    .scaleEffect(totalScaleEffect, anchor: .center)
-                    .rotationEffect(totalRotation, anchor: .center)
-                    .offset(totalPanDistance)
-                    
-                    dockBar
                 }
-            }
-            .gesture(allGestures)
-            .onTapGesture(count: 2) {
-                zoomToFit(in: geometry)
-            }
-            .gesture(multitouchGesture)
-            .task {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                .gesture(allGestures)
+                .onTapGesture(count: 2) {
                     zoomToFit(in: geometry)
                 }
+                .gesture(multitouchGesture)
+                .task {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        zoomToFit(in: geometry)
+                    }
+                }
+            }
+            .sheet(item: $viewModel.selectedNote) { note in
+                NoteView(note: note)
+                    .presentationSizing(.page)
+            }
+            .sheet(isPresented: $isShowingSettings) {
+                SettingsView()
+            }
+            .task {
+                if viewModel.modelContext == nil {
+                    viewModel.setModelContext(modelContext)
+                    viewModel.buildExampleData()
+                }
+            }
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Settings", systemImage: "gear") {
+                        isShowingSettings.toggle()
+                    }
+                }
             }
         }
-        .background(Color.red)
-        .sheet(item: $viewModel.selectedNote) { note in
-            NoteView(note: note)
-        }
-        .task {
-            if viewModel.modelContext == nil {
-                viewModel.setModelContext(modelContext)
-                viewModel.buildExampleData()
-            }
-        }
-        
     }
     
     @ViewBuilder
     private var dockBar: some View {
         HStack(alignment: .center) {
-            ForEach(viewModel.slipboxes) { slipbox in
-                Button {
-                    //
-                } label: {
-                    VStack {
-                        Image(systemName: "folder")
-                            .font(.largeTitle)
-                        Text(slipbox.name)
-                            .font(.headline.bold())
+            ScrollView(.horizontal) {
+                HStack(spacing: 12) {
+                    ForEach(viewModel.slipboxes) { slipbox in
+                        Button {
+                            //
+                        } label: {
+                            IconAndTextView(iconName: "folder", text: slipbox.name)
+                        }
                     }
                 }
             }
+            .scrollIndicators(.hidden)
             
             Divider()
                 .padding(.horizontal, 8)
                 .frame(height: 44)
             
-            Button {
-                if let slipbox = viewModel.slipboxes.first {
-                    viewModel.createNewNote(in: slipbox)
+            HStack(spacing: 12) {
+                Button {
+                    if let slipbox = viewModel.slipboxes.first {
+                        viewModel.createNewNote(in: slipbox)
+                    }
+                } label: {
+                    IconAndTextView(iconName: "document.badge.plus", text: "New note")
                 }
-            } label: {
-                VStack {
-                    Image(systemName: "plus")
-                        .font(.largeTitle)
-                    Text("Create new note")
-                        .font(.headline.bold())
+                
+                Button {
+                    viewModel.createNewSlipbox()
+                } label: {
+                    IconAndTextView(iconName: "folder.badge.plus", text: "New slipbox")
                 }
             }
         }
@@ -180,12 +222,22 @@ struct MainView: View {
         .background(.ultraThinMaterial)
         .clipShape(.buttonBorder)
         .padding()
+        .zIndex(1000)
     }
     
     // MARK: - View UI Methods
     @ViewBuilder
     private func buildNotes(in geometry: GeometryProxy) -> some View {
         ForEach(viewModel.notes) { note in
+            ForEach(note.linkedNotes) { linkedNote in
+                Path { path in
+                    path.move(to: note.position.convertToCGPoint(in: geometry))
+                    path.addLine(to: linkedNote.position.convertToCGPoint(in: geometry))
+                }
+                .stroke(.purple)
+            }
+            .zIndex(0)
+            
             RoundedRectangle(cornerRadius: 12)
                 .fill(.gray)
                 .aspectRatio(Constants.aspectRatio, contentMode: .fit)
@@ -197,7 +249,7 @@ struct MainView: View {
                 .contextMenu {
                     Menu("Link note to", systemImage: "link") {
                         ForEach(viewModel.notes) { possibleLink in
-                            if note != possibleLink {
+                            if note != possibleLink, !note.linkedNotes.contains(possibleLink) {
                                 Button(possibleLink.name) {
                                     viewModel.setLink(from: note, to: possibleLink)
                                 }
@@ -220,19 +272,7 @@ struct MainView: View {
                     viewModel.selectedNote = note
                 }
                 .gesture(noteDragGesture(for: note, in: geometry))
-        }
-    }
-    
-    @ViewBuilder
-    private func buildLines(in geometry: GeometryProxy) -> some View {
-        ForEach(viewModel.notes) { note in
-            ForEach(note.linkedNotes) { linkedNote in
-                Path { path in
-                    path.move(to: note.position.convertToCGPoint(in: geometry))
-                    path.addLine(to: linkedNote.position.convertToCGPoint(in: geometry))
-                }
-                .stroke(.purple)
-            }
+                .zIndex(999)
         }
     }
     

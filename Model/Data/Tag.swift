@@ -8,7 +8,7 @@
 import SwiftData
 
 @Model
-final class Tag: Identifiable {
+final class Tag: Identifiable, Named {
     @Attribute(.unique)
     private(set) var name: String
     

@@ -9,7 +9,7 @@ import Foundation
 import SwiftData
 
 @Model
-final class Slipbox: Identifiable {
+final class Slipbox: Identifiable, Named {
     private(set) var dateCreated: Date
     private(set) var dateLastUpdated: Date
     
