@@ -6,6 +6,10 @@ struct MainView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var viewModel: MainViewModel = MainViewModel()
     
+    // MARK: - Theme and accent color
+    @AppStorage("theme") private var theme: Theme = .system
+    @AppStorage("colorKey") private var accentColor: Color = Color(UIColor.systemBlue)
+    
     // MARK: - Constants
     struct Constants {
         static let noteWidth: CGFloat = 100
@@ -26,6 +30,7 @@ struct MainView: View {
     @GestureState private var panDistanceGestureState: CGOffset = CGOffset.zero
     @State private var rotation: Angle = .zero
     @GestureState private var rotationGestureState: Angle = .zero
+    @State private var temporaryLinkPath: Path? = nil
     
     private var totalScaleEffect: CGFloat {
         scaleEffect * scaleEffectGestureState
@@ -100,8 +105,11 @@ struct MainView: View {
                         viewModel.updateNotePosition(note, to: inMotionDragValue.location, in: geometry, panOffset: .zero, zoom: 1, rotation: .zero)
                     } else {
                         //
+                        temporaryLinkPath = Path { path in
+                            path.move(to: note.position.convertToCGPoint(in: geometry))
+                            path.addLine(to: inMotionDragValue.location)
+                        }
                     }
-                        
                 }
             }
             .onEnded { endingDragValue in
@@ -109,10 +117,10 @@ struct MainView: View {
                     if viewModel.isInExploringMode {
                         viewModel.updateNotePosition(note, to: endingDragValue.location, in: geometry, panOffset: .zero, zoom: 1, rotation: .zero)
                     } else {
-                        //
-                        viewModel.setDraggedLink(from: note, to: endingDragValue.location, noteSize: Constants.cardSize)
+                        viewModel.setDraggedLink(from: note, to: endingDragValue.location, in: geometry, noteSize: Constants.cardSize)
                     }
                 }
+                temporaryLinkPath = nil
             }
     }
     
@@ -140,9 +148,9 @@ struct MainView: View {
                             viewModel.toggleExploringMode()
                         } label: {
                             if viewModel.isInExploringMode {
-                                IconAndTextView(iconName: "hand.draw", text: "Explore")
+                                IconAndTextView(iconName: "hand.draw", text: "Explore mode")
                             } else {
-                                IconAndTextView(iconName: "link", text: "Link")
+                                IconAndTextView(iconName: "link", text: "Link mode")
                             }
                         }
                         .padding()
@@ -163,8 +171,16 @@ struct MainView: View {
                 NoteView(note: note)
                     .presentationSizing(.page)
             }
+            .sheet(item: $viewModel.selectedSlipbox) { slipbox in
+                SlipboxView(slipbox, viewModel: viewModel)
+            }
             .sheet(isPresented: $isShowingSettings) {
                 SettingsView()
+            }
+            .alert(viewModel.alertTitle, isPresented: $viewModel.isAlertPresented) {
+                viewModel.buildAlertActions()
+            } message: {
+                Text(viewModel.alertMessage)
             }
             .task {
                 if viewModel.modelContext == nil {
@@ -180,6 +196,8 @@ struct MainView: View {
                 }
             }
         }
+        .preferredColorScheme(theme.colorScheme)
+        .tint(accentColor)
     }
     
     @ViewBuilder
@@ -192,6 +210,20 @@ struct MainView: View {
                             //
                         } label: {
                             IconAndTextView(iconName: "folder", text: slipbox.name)
+                        }
+                        .contextMenu {
+                            Button {
+                                viewModel.selectedSlipbox = slipbox
+                            } label: {
+                                Label("Edit \(slipbox.name)", systemImage: "pencil")
+                            }
+                            
+                            Button(role: .destructive) {
+                                viewModel.slipboxToDelete = slipbox
+                                viewModel.isAlertPresented = true
+                            } label: {
+                                Label("Delete \(slipbox.name)", systemImage: "trash")
+                            }
                         }
                     }
                 }
@@ -228,13 +260,17 @@ struct MainView: View {
     // MARK: - View UI Methods
     @ViewBuilder
     private func buildNotes(in geometry: GeometryProxy) -> some View {
+        if let temporaryLinkPath {
+            temporaryLinkPath
+                .stroke(accentColor)
+        }
         ForEach(viewModel.notes) { note in
             ForEach(note.linkedNotes) { linkedNote in
                 Path { path in
                     path.move(to: note.position.convertToCGPoint(in: geometry))
                     path.addLine(to: linkedNote.position.convertToCGPoint(in: geometry))
                 }
-                .stroke(.purple)
+                .stroke(accentColor)
             }
             .zIndex(0)
             

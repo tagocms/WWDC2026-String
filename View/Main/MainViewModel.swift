@@ -21,7 +21,13 @@ final class MainViewModel {
     private(set) var viewState: ViewState
     private(set) var isInExploringMode: Bool = false
     
+    // MARK: - Selected models
     var selectedNote: Note?
+    
+    var selectedSlipbox: Slipbox?
+    var slipboxToDelete: Slipbox?
+    
+    // MARK: - Model arrays
     var notes: [Note] {
         let fetchDescriptor = FetchDescriptor<Note>(sortBy: [])
         return ((try? modelContext?.fetch(fetchDescriptor)) ?? []).sorted()
@@ -29,6 +35,29 @@ final class MainViewModel {
     var slipboxes: [Slipbox] {
         let fetchDescriptor = FetchDescriptor<Slipbox>(sortBy: [])
         return ((try? modelContext?.fetch(fetchDescriptor)) ?? []).sorted()
+    }
+    
+    // MARK: - Alert
+    var alertTitle: String {
+        if let slipboxToDelete {
+            return "Delete slipbox \(slipboxToDelete.name)"
+        }
+        return ""
+    }
+    var alertMessage: String {
+        if let slipboxToDelete {
+            return "Are you sure you want to delete this slipbox? Every note and folder inside it will also be deleted - there are \(slipboxToDelete.totalNoteCount) notes inside."
+        }
+        return ""
+    }
+    var isAlertPresented: Bool = false
+    @ViewBuilder @MainActor
+    func buildAlertActions(onDelete: (() -> Void)? = nil) -> some View {
+        Button("Cancel", role: .cancel) { self.slipboxToDelete = nil }
+        Button("Delete") {
+            self.delete(self.slipboxToDelete)
+            onDelete?()
+        }
     }
     
     // MARK: - Initializer functions
@@ -59,8 +88,8 @@ final class MainViewModel {
             try? modelContext.save()
         }
     }
-    
-    // MARK: - Intent functions
+
+    // MARK: - Setters
     func setViewState(to viewState: ViewState) {
         self.viewState = viewState
     }
@@ -69,6 +98,7 @@ final class MainViewModel {
         self.isInExploringMode.toggle()
     }
     
+    // MARK: - Intent methods
     func onMultitouchGesture(_ value: MultitouchGestureRecognizer.Value, perform action: (() -> Void)? = nil) {
         withAnimation {
             if value.translation.height < -50 && viewState != .slipboxes {
@@ -89,27 +119,28 @@ final class MainViewModel {
         let title = nameWithoutDuplicates(for: notes)
         let note = Note(slipbox: slipbox, title: title)
         createAndSaveToModelContext(note)
-        
-        // TODO: fetch do swift Data (insert do seu elemento no array)
+        selectedNote = note
     }
     
-    func delete(_ note: Note) {
-        deleteAndSaveToModelContext(note)
+    func delete<T: PersistentModel>(_ model: T?) {
+        guard let model else { return }
+        deleteAndSaveToModelContext(model)
+        slipboxToDelete = nil
     }
     
     func setLink(from note: Note, to possibleLink: Note) {
         note.addLink(to: possibleLink)
     }
     
-    func setDraggedLink(from note: Note, to location: CGPoint, noteSize: CGSize) {
-        // TODO: - Arrumar
+    func setDraggedLink(from note: Note, to location: CGPoint, in geometry: GeometryProxy, noteSize: CGSize) {
         var closestNote: Note? = nil
         var closestDistance: Float? = nil
-        notes.forEach { possibleLink in
-            let currentDistance = possibleLink.position.distance(to: note.position)
-            if closestDistance ?? 0 > currentDistance || closestDistance == nil {
+        for possibleLink in notes {
+            guard possibleLink != note else { continue }
+            let currentDistance = possibleLink.position.distance(to: .converted(from: location, in: geometry))
+            if (closestDistance ?? 0 > currentDistance || closestDistance == nil) && CGFloat(currentDistance) <= noteSize.width / 2 {
                 closestDistance = currentDistance
-                closestNote = note
+                closestNote = possibleLink
             }
         }
         guard let closestNote, closestDistance != nil else { return }
@@ -124,6 +155,8 @@ final class MainViewModel {
         let title = nameWithoutDuplicates(for: slipboxes)
         let slipbox = Slipbox(title: title)
         createAndSaveToModelContext(slipbox)
+        
+        selectedSlipbox = slipbox
     }
     
     // MARK: - Auxiliary methods
@@ -152,7 +185,7 @@ final class MainViewModel {
 }
 
 extension Position {
-    static func converted(from point: CGPoint, in geometry: GeometryProxy, panOffset: CGOffset, zoom: CGFloat, rotation: Angle) -> Position {
+    static func converted(from point: CGPoint, in geometry: GeometryProxy, panOffset: CGOffset = .zero, zoom: CGFloat = 1, rotation: Angle = .zero) -> Position {
         let center = geometry.frame(in: .local).center
         let rotatedOffset = panOffset * rotation
         return Position(

@@ -3,14 +3,10 @@ import SwiftUI
 
 @main
 struct MyApp: App {
-    // MARK: - Theme
-    @AppStorage("theme") private var theme: Theme = .system
-    
     var body: some Scene {
         WindowGroup {
             MainView()
                 .modelContainer(for: Slipbox.self)
-                .preferredColorScheme(theme.colorScheme)
         }
     }
 }

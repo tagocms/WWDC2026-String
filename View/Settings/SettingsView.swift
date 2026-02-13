@@ -8,11 +8,15 @@
 import SwiftUI
 
 struct SettingsView: View {
+    // MARK: - Constants
+    static let userDefaultsColorKey = "colorKey"
+    
     // MARK: - UI settings
 //    @Environment(\.colorScheme)
     @AppStorage("theme") private var theme: Theme = .system
     @AppStorage("isShowingUIControls") private var isShowingUIControls: Bool = true
     @AppStorage("isUI3D") private var isUI3D: Bool = false
+    @AppStorage("colorKey") private var accentColor: Color = Color(UIColor.systemBlue)
     
     var body: some View {
         Form {
@@ -23,6 +27,7 @@ struct SettingsView: View {
                             .tag(theme)
                     }
                 }
+                ColorPicker("Accent color", selection: $accentColor)
                 Toggle("Show UI Controls", isOn: $isShowingUIControls)
                 Toggle("3D Mode", isOn: $isUI3D)
             }
