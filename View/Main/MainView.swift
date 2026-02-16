@@ -303,7 +303,8 @@ struct MainView: View {
                         }
                     }
                     Button("Delete note", systemImage: "trash", role: .destructive) {
-                        viewModel.delete(note)
+                        viewModel.noteToDelete = note
+                        isAlertPresented = true
                     }
                 }
                 .position(note.position.convertToCGPoint(in: geometry))
@@ -324,9 +325,6 @@ struct MainView: View {
             let bbox = boundingBoxForMap
             let geometryFrame = geometry.frame(in: .local).insetBy(dx: Constants.cardSize.width, dy: Constants.cardSize.height)
             
-            print(bbox)
-            print(geometryFrame)
-            
             guard bbox.width > 0,
                   bbox.height > 0,
                   geometryFrame.width > 0,
@@ -344,10 +342,6 @@ struct MainView: View {
             center: note.position.convertToCGPoint(),
             size: Constants.cardSize
         )
-        print()
-        print("Bounding box for note \(note.name): \(bbox)")
-        print("Real positions for note \(note.name): x - \(note.position.x); y - \(note.position.y)")
-        print()
         return bbox
     }
     

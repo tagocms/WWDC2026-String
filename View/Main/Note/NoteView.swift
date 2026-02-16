@@ -8,6 +8,9 @@
 import SwiftUI
 
 struct NoteView: View {
+    // MARK: - Dismiss
+    @Environment(\.dismiss) private var dismiss
+    
     // MARK: - Data
     let note: Note
     @Bindable private var viewModel: MainViewModel
@@ -28,7 +31,7 @@ struct NoteView: View {
                     .font(.title.bold())
                 Picker("Parent Slipbox", selection: $parentSlipbox) {
                     ForEach(viewModel.slipboxes.sorted()) { possibleParent in
-                        Text(note.name)
+                        Text(possibleParent.name)
                             .tag(possibleParent)
                     }
                 }
@@ -37,6 +40,20 @@ struct NoteView: View {
             Section("Content") {
                 TextEditor(text: $contentBody)
             }
+            
+            Section {
+                Button("Delete note", role: .destructive) {
+                    viewModel.noteToDelete = note
+                    isAlertPresented = true
+                }
+            }
+        }
+        .alert(viewModel.alertTitle, isPresented: $isAlertPresented) {
+            viewModel.buildAlertActions {
+                dismiss()
+            }
+        } message: {
+            Text(viewModel.alertMessage)
         }
         .onChange(of: name) { oldValue, newValue in
             if note.isNameValid(newValue, allNotes: viewModel.notes) {

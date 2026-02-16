@@ -23,6 +23,7 @@ final class MainViewModel {
     
     // MARK: - Selected models
     var selectedNote: Note?
+    var noteToDelete: Note?
     
     var selectedSlipbox: Slipbox?
     var slipboxToDelete: Slipbox?
@@ -41,21 +42,33 @@ final class MainViewModel {
     var alertTitle: String {
         if let slipboxToDelete {
             return "Delete slipbox \(slipboxToDelete.name)"
+        } else if let noteToDelete {
+            return "Delete note \(noteToDelete.name)"
         }
         return ""
     }
     var alertMessage: String {
         if let slipboxToDelete {
             return "Are you sure you want to delete this slipbox? Every note and folder inside it will also be deleted - there are \(slipboxToDelete.totalNoteCount) notes inside."
+        } else if let noteToDelete {
+            return "Are you sure you want to delete this note (\(noteToDelete.name))?"
         }
         return ""
     }
     @ViewBuilder @MainActor
     func buildAlertActions(onDelete: (() -> Void)? = nil) -> some View {
-        Button("Cancel", role: .cancel) { self.slipboxToDelete = nil }
-        Button("Delete") {
-            self.delete(self.slipboxToDelete)
-            onDelete?()
+        if let slipboxToDelete {
+            Button("Cancel", role: .cancel) { self.slipboxToDelete = nil }
+            Button("Delete") {
+                self.delete(slipboxToDelete)
+                onDelete?()
+            }
+        } else if let noteToDelete {
+            Button("Cancel", role: .cancel) { self.noteToDelete = nil }
+            Button("Delete") {
+                self.delete(noteToDelete)
+                onDelete?()
+            }
         }
     }
     
