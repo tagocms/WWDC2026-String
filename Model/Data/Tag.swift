@@ -15,8 +15,8 @@ final class Tag: Identifiable, Named {
     @Relationship(deleteRule: .nullify,)
     private(set) var notes: [Note] = []
     
-    init(title: String) {
-        self.name = title
+    init(name: String) {
+        self.name = name
     }
 }
 

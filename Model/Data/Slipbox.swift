@@ -74,6 +74,11 @@ final class Slipbox: Identifiable, Named {
         guard !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() != "root" else {
             return false
         }
+        
+        guard name.count <= 30 else {
+            return false
+        }
+        
         return true
     }
 }

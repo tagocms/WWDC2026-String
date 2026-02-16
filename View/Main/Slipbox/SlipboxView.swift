@@ -28,6 +28,8 @@ struct SlipboxView: View {
         Form {
             Section("Slipbox") {
                 TextField("Name", text: $name)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
                 Picker("Parent Slipbox", selection: $parentSlipbox) {
                     Text("Root")
                         .tag(nil as Slipbox?)

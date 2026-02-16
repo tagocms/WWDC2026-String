@@ -17,6 +17,8 @@ struct IconAndTextView: View {
                 .font(.largeTitle)
             Text(text)
                 .font(.headline.bold())
+                .lineLimit(1)
         }
+        .frame(maxWidth: 100)
     }
 }

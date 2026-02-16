@@ -37,6 +37,10 @@ final class MainViewModel {
         let fetchDescriptor = FetchDescriptor<Slipbox>(sortBy: [])
         return ((try? modelContext?.fetch(fetchDescriptor)) ?? []).sorted()
     }
+    var tags: [Tag] {
+        let fetchDescriptor = FetchDescriptor<Tag>(sortBy: [])
+        return ((try? modelContext?.fetch(fetchDescriptor)) ?? []).sorted()
+    }
     
     // MARK: - Alert
     var alertTitle: String {

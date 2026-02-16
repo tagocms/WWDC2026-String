@@ -72,7 +72,6 @@ final class Note: Identifiable, Named {
         self.linkedNotes.remove(at: index)
     }
     
-    // MARK: - Setters
     func setName(_ name: String, allNotes: [Note]) {
         if isNameValid(name, allNotes: allNotes) {
             self.name = name
@@ -81,6 +80,18 @@ final class Note: Identifiable, Named {
     
     func setParentSlipbox(_ slipbox: Slipbox) {
         self.slipbox = slipbox
+    }
+    
+    func setTags(_ tags: [Tag]) {
+        var tagSet: Set<Tag> = []
+        tagSet.formUnion(tags)
+        self.tags = tagSet.map { $0 }
+    }
+    
+    func setLinkedNotes(_ linkedNotes: [Note]) {
+        var noteSet: Set<Note> = []
+        noteSet.formUnion(linkedNotes)
+        self.linkedNotes = noteSet.map { $0 }
     }
     
     func setContent(_ contentBody: String) {
@@ -100,6 +111,29 @@ final class Note: Identifiable, Named {
         guard !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             return false
         }
+        
+        guard name.count <= 80 else {
+            return false
+        }
+        
+        return true
+    }
+    
+    func isTagValid(_ tagName: String, allTags: [Tag]) -> Bool {
+        for tag in allTags {
+            if tag.name == tagName {
+                return false
+            }
+        }
+        
+        guard !tagName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return false
+        }
+        
+        guard tagName.count <= 16 else {
+            return false
+        }
+        
         return true
     }
 }
