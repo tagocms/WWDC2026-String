@@ -9,6 +9,7 @@ import SwiftData
 import SwiftUI
 
 struct SlipboxView: View {
+    // MARK: - Dismiss
     @Environment(\.dismiss) private var dismiss
     
     // MARK: - Data
@@ -18,7 +19,7 @@ struct SlipboxView: View {
     // MARK: - UI State
     @State private var name: String
     @State private var parentSlipbox: Slipbox?
-    @State private var isAlertActive: Bool = false
+    @State private var isAlertPresented: Bool = false
     
     var body: some View {
         Form {
@@ -38,10 +39,10 @@ struct SlipboxView: View {
             
             Button("Delete slipbox", role: .destructive) {
                 viewModel.slipboxToDelete = slipbox
-                viewModel.isAlertPresented = true
+                isAlertPresented = true
             }
         }
-        .alert(viewModel.alertTitle, isPresented: $isAlertActive) {
+        .alert(viewModel.alertTitle, isPresented: $isAlertPresented) {
             viewModel.buildAlertActions {
                 dismiss()
             }

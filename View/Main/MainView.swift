@@ -10,6 +10,14 @@ struct MainView: View {
     @AppStorage("theme") private var theme: Theme = .system
     @AppStorage("colorKey") private var accentColor: Color = Color(UIColor.systemBlue)
     
+    // MARK: - Settings State
+    @State private var isShowingSettings: Bool = false
+    @AppStorage("isShowingUIControls") private var isShowingUIControls: Bool = true
+    @AppStorage("isUI3D") private var isUI3D: Bool = false
+    
+    // MARK: - Alert
+    @State private var isAlertPresented = false
+    
     // MARK: - Constants
     struct Constants {
         static let noteWidth: CGFloat = 100
@@ -41,11 +49,6 @@ struct MainView: View {
     private var totalRotation: Angle {
         rotation + rotationGestureState
     }
-    
-    // MARK: - Settings State
-    @State private var isShowingSettings: Bool = false
-    @AppStorage("isShowingUIControls") private var isShowingUIControls: Bool = true
-    @AppStorage("isUI3D") private var isUI3D: Bool = false
     
     // MARK: - Gestures
     private var allGestures: some Gesture {
@@ -177,7 +180,7 @@ struct MainView: View {
             .sheet(isPresented: $isShowingSettings) {
                 SettingsView()
             }
-            .alert(viewModel.alertTitle, isPresented: $viewModel.isAlertPresented) {
+            .alert(viewModel.alertTitle, isPresented: $isAlertPresented) {
                 viewModel.buildAlertActions()
             } message: {
                 Text(viewModel.alertMessage)
@@ -220,7 +223,7 @@ struct MainView: View {
                             
                             Button(role: .destructive) {
                                 viewModel.slipboxToDelete = slipbox
-                                viewModel.isAlertPresented = true
+                                isAlertPresented = true
                             } label: {
                                 Label("Delete \(slipbox.name)", systemImage: "trash")
                             }

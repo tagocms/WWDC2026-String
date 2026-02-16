@@ -50,7 +50,6 @@ final class MainViewModel {
         }
         return ""
     }
-    var isAlertPresented: Bool = false
     @ViewBuilder @MainActor
     func buildAlertActions(onDelete: (() -> Void)? = nil) -> some View {
         Button("Cancel", role: .cancel) { self.slipboxToDelete = nil }
