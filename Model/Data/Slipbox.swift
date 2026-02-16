@@ -40,18 +40,37 @@ final class Slipbox: Identifiable, Named {
     }
     
     // MARK: - Setters
-    func setName(_ name: String) {
-        if Self.isNameValid(name) {
+    func setName(_ name: String, allSlipboxes: [Slipbox]) {
+        if isNameValid(name, allSlipboxes: allSlipboxes) {
             self.name = name
         }
     }
     
     func setParentSlipbox(_ slipbox: Slipbox?) {
-        self.parentSlipbox = slipbox
+        // TODO: VALIDATE IF THERE ARE NO CIRCULAR REFERENCES
+        if isParentSlipboxValid(slipbox) {
+            self.parentSlipbox = slipbox
+        }
     }
     
-    // MARK: - Static
-    static func isNameValid(_ name: String) -> Bool {
+    // MARK: - Auxiliary
+    func isParentSlipboxValid(_ newParentSlipbox: Slipbox?, originalSlipbox: Slipbox? = nil) -> Bool {
+        guard let newParentSlipbox else { return true }
+        guard newParentSlipbox !== self else { return false }
+        guard newParentSlipbox !== originalSlipbox else { return false }
+        
+        return newParentSlipbox.isParentSlipboxValid(newParentSlipbox.parentSlipbox, originalSlipbox: originalSlipbox == nil ? self : originalSlipbox)
+    }
+    
+    func isNameValid(_ name: String, allSlipboxes: [Slipbox]) -> Bool {
+        for slipbox in allSlipboxes {
+            if slipbox != self {
+                if slipbox.name == name {
+                    return false
+                }
+            }
+        }
+        
         guard !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() != "root" else {
             return false
         }

@@ -71,6 +71,37 @@ final class Note: Identifiable, Named {
         guard let index = self.linkedNotes.firstIndex(of: note) else { return }
         self.linkedNotes.remove(at: index)
     }
+    
+    // MARK: - Setters
+    func setName(_ name: String, allNotes: [Note]) {
+        if isNameValid(name, allNotes: allNotes) {
+            self.name = name
+        }
+    }
+    
+    func setParentSlipbox(_ slipbox: Slipbox) {
+        self.slipbox = slipbox
+    }
+    
+    func setContent(_ contentBody: String) {
+        self.contentBody = contentBody
+    }
+    
+    // MARK: - Auxiliary
+    func isNameValid(_ name: String, allNotes: [Note]) -> Bool {
+        for note in allNotes {
+            if note != self {
+                if note.name == name {
+                    return false
+                }
+            }
+        }
+        
+        guard !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return false
+        }
+        return true
+    }
 }
 
 extension Note: Comparable {

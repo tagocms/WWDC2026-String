@@ -171,7 +171,7 @@ struct MainView: View {
                 }
             }
             .sheet(item: $viewModel.selectedNote) { note in
-                NoteView(note: note)
+                NoteView(note, viewModel: viewModel)
                     .presentationSizing(.page)
             }
             .sheet(item: $viewModel.selectedSlipbox) { slipbox in

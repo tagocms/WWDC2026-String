@@ -16,11 +16,14 @@ struct SlipboxView: View {
     let slipbox: Slipbox
     @Bindable private var viewModel: MainViewModel
     
-    // MARK: - UI State
+    // MARK: - Data UI State
     @State private var name: String
     @State private var parentSlipbox: Slipbox?
+    
+    // MARK: - UI State
     @State private var isAlertPresented: Bool = false
     
+    // MARK: - View
     var body: some View {
         Form {
             Section("Slipbox") {
@@ -29,7 +32,7 @@ struct SlipboxView: View {
                     Text("Root")
                         .tag(nil as Slipbox?)
                     ForEach(viewModel.slipboxes.sorted()) { possibleParent in
-                        if slipbox != possibleParent {
+                        if slipbox.isParentSlipboxValid(possibleParent) {
                             Text(possibleParent.name)
                                 .tag(possibleParent)
                         }
@@ -50,22 +53,26 @@ struct SlipboxView: View {
             Text(viewModel.alertMessage)
         }
         .onChange(of: name) { oldValue, newValue in
-            if Slipbox.isNameValid(newValue) {
+            if slipbox.isNameValid(newValue, allSlipboxes: viewModel.slipboxes) {
                 name = newValue
             } else {
                 name = oldValue
             }
         }
-        .onDisappear {
-            slipbox.setName(name)
-            slipbox.setParentSlipbox(parentSlipbox)
-        }
+        .onDisappear(perform: saveChanges)
     }
     
+    // MARK: - Initializer
     init(_ slipbox: Slipbox, viewModel: MainViewModel) {
         self.slipbox = slipbox
         self._name = State(initialValue: slipbox.name)
         self._parentSlipbox = State(initialValue: slipbox.parentSlipbox)
         self._viewModel = Bindable(viewModel)
+    }
+    
+    // MARK: - Auxiliary functions
+    private func saveChanges() {
+        slipbox.setName(name, allSlipboxes: viewModel.slipboxes)
+        slipbox.setParentSlipbox(parentSlipbox)
     }
 }
