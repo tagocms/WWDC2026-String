@@ -10,6 +10,7 @@ import SwiftUI
 struct IconAndTextView: View {
     let iconName: String
     let text: String
+    let isSelected: Bool
     
     var body: some View {
         VStack {
@@ -20,5 +21,12 @@ struct IconAndTextView: View {
                 .lineLimit(1)
         }
         .frame(maxWidth: 100)
+        .opacity(isSelected ? 1 : 0.6)
+    }
+    
+    init(iconName: String, text: String, isSelected: Bool = true) {
+        self.iconName = iconName
+        self.text = text
+        self.isSelected = isSelected
     }
 }

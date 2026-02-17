@@ -19,7 +19,7 @@ final class MainViewModel {
     // MARK: - Properties
     private(set) var modelContext: ModelContext?
     private(set) var viewState: ViewState
-    private(set) var isInExploringMode: Bool = false
+    private(set) var isInExploringMode: Bool = true
     
     // MARK: - Selected models
     var selectedNote: Note?
@@ -28,10 +28,29 @@ final class MainViewModel {
     var selectedSlipbox: Slipbox?
     var slipboxToDelete: Slipbox?
     
+    // MARK: - Filters
+    var filterTags: [Tag] = []
+    var filterSlipbox: Slipbox? = nil
+    
     // MARK: - Model arrays
     var notes: [Note] {
         let fetchDescriptor = FetchDescriptor<Note>(sortBy: [])
         return ((try? modelContext?.fetch(fetchDescriptor)) ?? []).sorted()
+    }
+    var filteredNotes: [Note] {
+        notes.filter { note in
+            let filter = (filterSlipbox, filterTags)
+            switch filter {
+            case let (.none, tags) where tags.isEmpty:
+                return true
+            case let (.none, tags):
+                return doesNoteContainAnyTag(note, tags: tags)
+            case let (slipbox?, tags) where tags.isEmpty:
+                return isNoteInSlipbox(note, slipbox: slipbox)
+            case let (slipbox?, tags):
+                return isNoteInSlipbox(note, slipbox: slipbox) && doesNoteContainAnyTag(note, tags: tags)
+            }
+        }
     }
     var slipboxes: [Slipbox] {
         let fetchDescriptor = FetchDescriptor<Slipbox>(sortBy: [])
@@ -131,11 +150,21 @@ final class MainViewModel {
         try? modelContext?.save()
     }
     
-    func createNewNote(in slipbox: Slipbox) {
+    private func createNewNote(in slipbox: Slipbox) {
         let title = nameWithoutDuplicates(for: notes)
         let note = Note(slipbox: slipbox, title: title)
         createAndSaveToModelContext(note)
         selectedNote = note
+    }
+    
+    func createNewNote() {
+        if let slipbox = filterSlipbox {
+            createNewNote(in: slipbox)
+        } else if let slipbox = slipboxes.first {
+            createNewNote(in: slipbox)
+        } else {
+            createNewNote(in: createAndReturnNewSlipbox())
+        }
     }
     
     func delete<T: PersistentModel>(_ model: T?) {
@@ -167,12 +196,18 @@ final class MainViewModel {
         note.removeLink(to: link)
     }
     
-    func createNewSlipbox() {
+    func createAndReturnNewSlipbox() -> Slipbox {
         let title = nameWithoutDuplicates(for: slipboxes)
         let slipbox = Slipbox(title: title)
         createAndSaveToModelContext(slipbox)
         
         selectedSlipbox = slipbox
+        
+        return slipbox
+    }
+    
+    func createNewSlipbox() {
+        let _ = createAndReturnNewSlipbox()
     }
     
     // MARK: - Auxiliary methods
@@ -197,6 +232,27 @@ final class MainViewModel {
     private func deleteAndSaveToModelContext<T: PersistentModel>(_ item: T) {
         modelContext?.delete(item)
         try? modelContext?.save()
+    }
+    
+    private func isNoteInSlipbox(_ note: Note, slipbox: Slipbox) -> Bool {
+        if note.slipbox === slipbox { return true }
+        
+        for childSlipbox in slipbox.slipboxes {
+            if isNoteInSlipbox(note, slipbox: childSlipbox) {
+                return true
+            }
+        }
+        
+        return false
+    }
+    
+    private func doesNoteContainAnyTag(_ note: Note, tags: [Tag]) -> Bool {
+        for noteTag in note.tags {
+            if tags.contains(noteTag) {
+                return true
+            }
+        }
+        return false
     }
 }
 
