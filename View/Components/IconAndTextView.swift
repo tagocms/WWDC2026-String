@@ -13,7 +13,7 @@ struct IconAndTextView: View {
     let isSelected: Bool
     
     var body: some View {
-        VStack {
+        VStack(spacing: 4) {
             Image(systemName: iconName)
                 .font(.largeTitle)
             Text(text)

@@ -50,6 +50,11 @@ struct MainView: View {
         rotation + rotationGestureState
     }
     
+    // MARK: - View animations
+    @Namespace private var noteNamespace
+    @Namespace private var slipboxNamespace
+    @Namespace private var defaultNamespace
+    
     // MARK: - View Body
     var body: some View {
         NavigationStack {
@@ -67,12 +72,15 @@ struct MainView: View {
         .sheet(item: $viewModel.selectedNote) { note in
             NoteView(note, viewModel: viewModel)
                 .presentationSizing(.page)
+                .navigationTransition(.zoom(sourceID: note.persistentModelID, in: noteNamespace))
         }
         .sheet(item: $viewModel.selectedSlipbox) { slipbox in
             SlipboxView(slipbox, viewModel: viewModel)
+                .navigationTransition(.zoom(sourceID: slipbox.persistentModelID, in: slipboxNamespace))
         }
         .sheet(isPresented: $isShowingSettings) {
             SettingsView()
+                .navigationTransition(.zoom(sourceID: "settings", in: defaultNamespace))
         }
         .alert(viewModel.alertTitle, isPresented: $isAlertPresented) {
             viewModel.buildAlertActions()
@@ -90,6 +98,7 @@ struct MainView: View {
                 Button("Settings", systemImage: "gear") {
                     isShowingSettings.toggle()
                 }
+                .matchedTransitionSource(id: "settings", in: defaultNamespace)
             }
         }
     }
@@ -109,12 +118,15 @@ struct MainView: View {
     
     @ViewBuilder
     private var dockBar: some View {
-        HStack(alignment: .center) {
+        HStack(alignment: .dockBarLastTextBaseline) {
             slipboxesDockBarButtons
             Divider()
                 .padding(.horizontal, 8)
-                .frame(height: 44)
+                .frame(height: 66)
             fixedDockBarButtons
+                .alignmentGuide(VerticalAlignment.dockBarLastTextBaseline) { dimension in
+                    dimension[VerticalAlignment.bottom]
+                }
         }
         .padding()
         .background(.ultraThinMaterial)
@@ -126,14 +138,20 @@ struct MainView: View {
     @ViewBuilder
     private var slipboxesDockBarButtons: some View {
         ScrollView(.horizontal) {
-            HStack(spacing: 12) {
+            HStack(alignment: .dockBarLastTextBaseline, spacing: 12) {
                 Button {
                     viewModel.filterSlipbox = nil
                 } label: {
                     IconAndTextView(iconName: "folder", text: "All", isSelected: viewModel.filterSlipbox == nil)
                 }
+                .alignmentGuide(.dockBarLastTextBaseline) { dimension in
+                    dimension[.top]
+                }
                 ForEach(viewModel.slipboxes) { slipbox in
                     buildSlipboxButton(slipbox)
+                        .alignmentGuide(.dockBarLastTextBaseline) { dimension in
+                            dimension[.top]
+                        }
                 }
             }
         }
@@ -143,7 +161,7 @@ struct MainView: View {
     
     @ViewBuilder
     private var fixedDockBarButtons: some View {
-        HStack(spacing: 12) {
+        HStack(alignment: .dockBarLastTextBaseline, spacing: 12) {
             createNewNoteAndSlipboxButtons
             filterMenuButton
         }
@@ -273,6 +291,7 @@ struct MainView: View {
                 Text("\(note.name)")
                     .font(.largeTitle.bold())
             )
+            .matchedTransitionSource(id: note.persistentModelID, in: noteNamespace)
             .contextMenu {
                 if !viewModel.isInExploringMode {
                     Menu("Link note to", systemImage: "link") {
@@ -327,6 +346,7 @@ struct MainView: View {
                 Label("Delete \(slipbox.name)", systemImage: "trash")
             }
         }
+        .matchedTransitionSource(id: slipbox.persistentModelID, in: slipboxNamespace)
     }
     
     // MARK: - UI Size methods
