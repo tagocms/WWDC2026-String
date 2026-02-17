@@ -144,40 +144,45 @@ struct MainView: View {
     @ViewBuilder
     private var fixedDockBarButtons: some View {
         HStack(spacing: 12) {
-            Button {
-                viewModel.createNewNote()
-            } label: {
-                IconAndTextView(iconName: "document.badge.plus", text: "New note")
-            }
-            
-            Button {
-                viewModel.createNewSlipbox()
-            } label: {
-                IconAndTextView(iconName: "folder.badge.plus", text: "New slipbox")
-            }
-            
-            Menu {
-                Button("Clear filter", systemImage: "clear", role: .cancel) { viewModel.filterTags.removeAll() }
-                Menu("Tags", systemImage: "tag") {
-                    ForEach(viewModel.tags) { tag in
-                        Button(
-                            tag.name,
-                            systemImage: viewModel.filterTags.contains(tag) ? "checkmark" : ""
-                        ) {
-                            if viewModel.filterTags.contains(tag) { viewModel.filterTags.removeAll(where: { $0 === tag })
-                            } else {
-                                viewModel.filterTags.append(tag)
-                            }
+            createNewNoteAndSlipboxButtons
+            filterMenuButton
+        }
+    }
+    
+    @ViewBuilder
+    private var createNewNoteAndSlipboxButtons: some View {
+        Button {
+            viewModel.createNewNote()
+        } label: {
+            IconAndTextView(iconName: "document.badge.plus", text: "New note")
+        }
+        
+        Button {
+            viewModel.createNewSlipbox()
+        } label: {
+            IconAndTextView(iconName: "folder.badge.plus", text: "New slipbox")
+        }
+    }
+    
+    private var filterMenuButton: some View {
+        Menu {
+            Button("Clear filter", systemImage: "clear", role: .cancel) { viewModel.filterTags.removeAll() }
+            Menu("Tags", systemImage: "tag") {
+                ForEach(viewModel.tags) { tag in
+                    Button(
+                        tag.name,
+                        systemImage: viewModel.filterTags.contains(tag) ? "checkmark.circle" : "circle"
+                    ) {
+                        if viewModel.filterTags.contains(tag) { viewModel.filterTags.removeAll(where: { $0 === tag })
+                        } else {
+                            viewModel.filterTags.append(tag)
                         }
                     }
                 }
-                Picker("Tags", systemImage: "tag", selection: $viewModel.filterTags) {
-                    
-                }
-                .pickerStyle(.menu)
-            } label: {
-                IconAndTextView(iconName: "line.3.horizontal.decrease", text: "Filter")
             }
+            .menuActionDismissBehavior(.disabled)
+        } label: {
+            IconAndTextView(iconName: "line.3.horizontal.decrease", text: "Filter")
         }
     }
     
