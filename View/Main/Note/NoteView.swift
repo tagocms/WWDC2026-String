@@ -73,6 +73,7 @@ struct NoteView: View {
                             .alignmentGuide(VerticalAlignment.searchBarBottom) { dimension in
                                 dimension[.top]
                             }
+                            .padding(.top, 8)
                     }
                 }
                 .buttonStyle(.plain)
@@ -116,7 +117,7 @@ struct NoteView: View {
     }
     
     private var searchTagsBar: some View {
-        HStack {
+        HStack(spacing: 8) {
             Image(systemName: "plus")
             TextField("Add tag", text: $newTagName)
                 .lineLimit(1)
@@ -135,28 +136,28 @@ struct NoteView: View {
     
     @ViewBuilder
     private var overlayList: some View {
-        if focusState == .tags {
-            VStack(alignment: .leading) {
+        if focusState == .tags && !newTagName.isEmpty {
+            VStack(alignment: .leading, spacing: 8) {
                 ForEach(filteredTags) { tag in
                     if !tags.contains(tag) {
-                        Button(tag.name) {
+                        Button(tag.name, systemImage: "tag") {
                             withAnimation {
                                 tags.append(tag)
                                 newTagName = ""
                             }
                         }
+                        .labelIconToTitleSpacing(8)
                     }
                 }
                 if note.isTagValid(newTagName, allTags: viewModel.tags) {
                     Button("Create \(newTagName)", systemImage: "plus") {
                         withAnimation {
                             // TODO: - Lidar com isso e corrigir o bug do overlay das tags - e componentizar isso, para usar nas linkedNotes também.
-                            if note.isTagValid(newTagName, allTags: viewModel.tags) {
-                                tags.append(Tag(name: newTagName))
-                            }
+                            tags.append(viewModel.createAndReturnNewTag(name: newTagName))
                             newTagName = ""
                         }
                     }
+                    .labelIconToTitleSpacing(8)
                 }
             }
             .animation(.default, value: focusState)
@@ -167,7 +168,7 @@ struct NoteView: View {
     @ViewBuilder
     private func buildTagButton(for tag: Tag) -> some View {
         Menu {
-            Button("Remove tag '\(tag.name)' from note", systemImage: "trash", role: .destructive) {
+            Button("Remove tag '\(tag.name)' from note", systemImage: "tag.slash", role: .destructive) {
                 withAnimation {
                     tags.removeAll { $0.id == tag.id }
                 }

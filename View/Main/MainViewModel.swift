@@ -210,6 +210,16 @@ final class MainViewModel {
         let _ = createAndReturnNewSlipbox()
     }
     
+    func createAndReturnNewTag(name: String) -> Tag {
+        let tag = Tag(name: name)
+        createAndSaveToModelContext(tag)
+        return tag
+    }
+    
+    func createNewTag(name: String) {
+        let _ = createAndReturnNewTag(name: name)
+    }
+    
     // MARK: - Auxiliary methods
     private func nameWithoutDuplicates<T: Named>(for collection: [T]) -> String {
         var name = "Untitled"
