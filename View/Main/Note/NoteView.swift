@@ -27,7 +27,7 @@ struct NoteView: View {
     @State private var tags: [Tag]
     @State private var newTagName: String = ""
     @State private var linkedNotes: [Note]
-    @State private var contentBody: String
+    @State private var contentBody: AttributedString
     
     // MARK: - Auxiliary
     private var filteredTags: [Tag] {
@@ -79,10 +79,11 @@ struct NoteView: View {
                 .buttonStyle(.plain)
             }
             
-            Section("Content") {
+            Section("Note Content") {
                 TextEditor(text: $contentBody)
                     .textInputAutocapitalization(.never)
                     .multilineTextAlignment(.leading)
+                    .frame(height: 800)
             }
             
             Section {

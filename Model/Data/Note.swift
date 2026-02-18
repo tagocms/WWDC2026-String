@@ -35,7 +35,7 @@ final class Note: Identifiable, Named {
     
     @Attribute(.unique)
     private(set) var name: String
-    private(set) var contentBody: String
+    private(set) var contentBody: AttributedString
     private(set) var position: Position
 
     init(
@@ -45,7 +45,7 @@ final class Note: Identifiable, Named {
         linkedNotes: [Note] = [],
         slipbox: Slipbox,
         title: String,
-        contentBody: String = "",
+        contentBody: AttributedString = "",
         position: Position = .zero
     ) {
         self.dateCreated = dateCreated
@@ -94,7 +94,7 @@ final class Note: Identifiable, Named {
         self.linkedNotes = noteSet.map { $0 }
     }
     
-    func setContent(_ contentBody: String) {
+    func setContent(_ contentBody: AttributedString) {
         self.contentBody = contentBody
     }
     
