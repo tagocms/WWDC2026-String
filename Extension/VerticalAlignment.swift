@@ -14,5 +14,12 @@ extension VerticalAlignment {
         }
     }
     
+    enum SearchBarBottom: AlignmentID {
+        static func defaultValue(in context: ViewDimensions) -> CGFloat {
+            context[VerticalAlignment.bottom]
+        }
+    }
+    
     static let dockBarLastTextBaseline = VerticalAlignment(DockBarLastTextBaseline.self)
+    static let searchBarBottom = VerticalAlignment(SearchBarBottom.self)
 }

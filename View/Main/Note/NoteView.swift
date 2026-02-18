@@ -66,22 +66,14 @@ struct NoteView: View {
                         }
                     }
                     
-                    HStack {
-                        Image(systemName: "plus")
-                        TextField("Add tag", text: $newTagName)
-                            .lineLimit(1)
-                            .fixedSize(horizontal: true, vertical: false)
-                            .textInputAutocapitalization(.never)
-                            .autocorrectionDisabled()
-                            .focused($focusState, equals: .tags)
+                    ZStack(alignment: .searchBarBottom) {
+                        searchTagsBar
+                        // TODO: - Melhorar o alignment guide para que o overlay fique literalmente por cima de todos os outros conteúdos dentro da ZStack, mas alinhado abaixo do searchTagsBar
+                        overlayList
+                            .alignmentGuide(VerticalAlignment.searchBarBottom) { dimension in
+                                dimension[.top]
+                            }
                     }
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(accentColor.opacity(0.2))
-                    .foregroundStyle(accentColor)
-                    .clipShape(.capsule)
-                    .frame(width: 100, alignment: .leading)
-                    .overlay(overlayList)
                 }
                 .buttonStyle(.plain)
             }
@@ -123,30 +115,52 @@ struct NoteView: View {
         .onDisappear(perform: saveChanges)
     }
     
+    private var searchTagsBar: some View {
+        HStack {
+            Image(systemName: "plus")
+            TextField("Add tag", text: $newTagName)
+                .lineLimit(1)
+                .fixedSize(horizontal: true, vertical: false)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+                .focused($focusState, equals: .tags)
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(accentColor.opacity(0.2))
+        .foregroundStyle(accentColor)
+        .clipShape(.capsule)
+        .frame(width: 100, alignment: .leading)
+    }
+    
     @ViewBuilder
     private var overlayList: some View {
-        VStack(alignment: .leading) {
-            ForEach(filteredTags) { tag in
-                if !tags.contains(tag) {
-                    Button(tag.name) {
+        if focusState == .tags {
+            VStack(alignment: .leading) {
+                ForEach(filteredTags) { tag in
+                    if !tags.contains(tag) {
+                        Button(tag.name) {
+                            withAnimation {
+                                tags.append(tag)
+                                newTagName = ""
+                            }
+                        }
+                    }
+                }
+                if note.isTagValid(newTagName, allTags: viewModel.tags) {
+                    Button("Create \(newTagName)", systemImage: "plus") {
                         withAnimation {
-                            tags.append(tag)
+                            // TODO: - Lidar com isso e corrigir o bug do overlay das tags - e componentizar isso, para usar nas linkedNotes também.
+                            if note.isTagValid(newTagName, allTags: viewModel.tags) {
+                                tags.append(Tag(name: newTagName))
+                            }
                             newTagName = ""
                         }
                     }
                 }
             }
-            if note.isTagValid(newTagName, allTags: viewModel.tags) {
-                Button("Create \(newTagName)", systemImage: "plus") {
-                    withAnimation {
-                        // TODO: - Lidar com isso e corrigir o bug do overlay das tags - e componentizar isso, para usar nas linkedNotes também.
-                        if note.isTagValid(newTagName, allTags: viewModel.tags) {
-                            tags.append(Tag(name: newTagName))
-                            newTagName = ""
-                        }
-                    }
-                }
-            }
+            .animation(.default, value: focusState)
+            .transition(.scale)
         }
     }
     

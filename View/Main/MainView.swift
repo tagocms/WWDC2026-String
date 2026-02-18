@@ -20,11 +20,10 @@ struct MainView: View {
     
     // MARK: - Constants
     struct Constants {
-        static let noteWidth: CGFloat = 100
-        static let aspectRatio: CGFloat = 2/3
-        static let randomPositions: [CGPoint] = (0...10).map { number in
-            CGPoint(x: CGFloat(Int.random(in: 0..<900)), y: CGFloat(Int.random(in: 0..<1200)))
-        }
+        static let cornerRadius: CGFloat = 12
+        static let noteWidth: CGFloat = 150
+        static let aspectRatio: CGFloat = 3/4
+        static let cardZIndex: Double = 999
         static let cardSize: CGSize = CGSize(
             width: Constants.noteWidth,
             height: Constants.noteWidth / Constants.aspectRatio
@@ -283,13 +282,39 @@ struct MainView: View {
     
     @ViewBuilder
     private func buildNoteCard(_ note: Note, in geometry: GeometryProxy) -> some View {
-        RoundedRectangle(cornerRadius: 12)
-            .fill(.gray)
+        RoundedRectangle(cornerRadius: Constants.cornerRadius)
+            .fill(Color.accentColor)
             .aspectRatio(Constants.aspectRatio, contentMode: .fit)
             .frame(width: Constants.noteWidth)
             .overlay(
-                Text("\(note.name)")
-                    .font(.largeTitle.bold())
+                GeometryReader { cardGeometry in
+                    VStack(alignment: .leading) {
+                        Text("\(note.name)")
+                            .font(.title3.bold())
+                        if !note.tags.isEmpty {
+                            HStack(alignment: .center) {
+                                Image(systemName: "tag")
+                                    .frame(width: cardGeometry.size.width * 0.2)
+                                LazyVGrid(
+                                    columns: [
+                                        GridItem(
+                                            .fixed(cardGeometry.size.width * 0.6)
+                                        )
+                                    ],
+                                    alignment: .leading
+                                ) {
+                                    ForEach(note.tags) { tag in
+                                        Text("\(tag.name)")
+                                            .font(.caption)
+                                            .lineLimit(1)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    .padding(8)
+                    .foregroundStyle(Color.appBackground)
+                }
             )
             .matchedTransitionSource(id: note.persistentModelID, in: noteNamespace)
             .contextMenu {
@@ -322,7 +347,7 @@ struct MainView: View {
                 viewModel.selectedNote = note
             }
             .gesture(noteDragGesture(for: note, in: geometry))
-            .zIndex(999)
+            .zIndex(Constants.cardZIndex)
     }
     
     @ViewBuilder
@@ -448,7 +473,6 @@ struct MainView: View {
                     if viewModel.isInExploringMode {
                         viewModel.updateNotePosition(note, to: inMotionDragValue.location, in: geometry, panOffset: .zero, zoom: 1, rotation: .zero)
                     } else {
-                        //
                         temporaryLinkPath = Path { path in
                             path.move(to: note.position.convertToCGPoint(in: geometry))
                             path.addLine(to: inMotionDragValue.location)
