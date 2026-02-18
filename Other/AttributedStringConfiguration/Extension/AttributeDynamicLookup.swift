@@ -9,9 +9,7 @@ import Foundation
 
 extension AttributeDynamicLookup {
     /// The subscript for pulling custom attributes into the dynamic attribute lookup.
-    ///
-    /// This makes them available throughout the code using the name they have in the
-    /// `AttributeScopes.CustomAttributes` scope.
+    /// This code was provided by Apple in their "Code-along: Cook up a rich text experience in SwiftUI with AttributedString" WWDC25 video.
     subscript<T: AttributedStringKey>(
         dynamicMember keyPath: KeyPath<AttributeScopes.CustomAttributes, T>
     ) -> T {
