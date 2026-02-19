@@ -32,7 +32,8 @@ let package = Package(
                 .landscapeLeft,
                 .portraitUpsideDown(.when(deviceFamilies: [.pad]))
             ],
-            appCategory: .utilities
+            appCategory: .utilities,
+            additionalInfoPlistContentFilePath: "ExtraInfo.plist"
         )
     ],
     targets: [
@@ -41,5 +42,5 @@ let package = Package(
             path: "."
         )
     ],
-    swiftLanguageVersions: [.version("6")]
+    swiftLanguageVersions: [.version("6")],
 )

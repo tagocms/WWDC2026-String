@@ -59,6 +59,16 @@ struct MainView: View {
         NavigationStack {
             fullViewBody
         }
+        .onOpenURL { url in
+            guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+                    let queryItems = components.queryItems else { return }
+            for item in queryItems {
+                guard item.name == "data", let stringData = item.value else { continue }
+                let decoder = JSONDecoder()
+                guard let decodedData = try? decoder.decode(PersistentIdentifier.self, from: Data(base64Encoded: stringData) ?? Data()) else { return }
+                viewModel.selectedNote = viewModel.notes.first(where: { $0.persistentModelID == decodedData })
+            }
+        }
         .preferredColorScheme(theme.colorScheme)
         .tint(accentColor)
     }
@@ -99,6 +109,15 @@ struct MainView: View {
                 }
                 .matchedTransitionSource(id: "settings", in: defaultNamespace)
             }
+        }
+        .onAppear {
+            var x = String()
+            dump(
+                NSDictionary(
+                    contentsOfFile: Bundle.main.path(forResource: "Info", ofType: "plist")!
+                ), to: &x
+            )
+            print("BANANA", x)
         }
     }
     

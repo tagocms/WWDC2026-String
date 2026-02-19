@@ -18,6 +18,23 @@ final class Tag: Identifiable, Named {
     init(name: String) {
         self.name = name
     }
+    
+    // MARK: - Auxiliary methods
+    static func isNameValid(_ tagName: String, allTags: [Tag]) -> Bool {
+        for tag in allTags {
+            if tag.name == tagName {
+                return false
+            }
+        }
+        
+        guard !tagName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              !tagName.contains(" "),
+                tagName.count <= 16 else {
+            return false
+        }
+        
+        return true
+    }
 }
 
 extension Tag: Comparable {

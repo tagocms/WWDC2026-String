@@ -27,7 +27,7 @@ struct SettingsView: View {
                             .tag(theme)
                     }
                 }
-                ColorPicker("Accent color", selection: $accentColor)
+                ColorPicker("Accent color", selection: $accentColor, supportsOpacity: false)
                 Toggle("Show UI Controls", isOn: $isShowingUIControls)
                 Toggle("3D Mode", isOn: $isUI3D)
             }

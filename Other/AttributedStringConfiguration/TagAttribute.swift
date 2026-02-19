@@ -1,5 +1,5 @@
 //
-//  File.swift
+//  TagAttribute.swift
 //  CreativeChallenge
 //
 //  Created by Tiago Camargo Maciel dos Santos on 18/02/26.
@@ -11,4 +11,8 @@ struct TagAttribute: CodableAttributedStringKey {
     typealias Value = Tag.ID
     
     static let name = "com.tiago.TagAttribute"
+    static let inheritedByAddedText = false
+    static let invalidationConditions:
+      Set<AttributedString.AttributeInvalidationCondition>? =
+      [.textChanged]
 }

@@ -118,24 +118,6 @@ final class Note: Identifiable, Named {
         
         return true
     }
-    
-    func isTagValid(_ tagName: String, allTags: [Tag]) -> Bool {
-        for tag in allTags {
-            if tag.name == tagName {
-                return false
-            }
-        }
-        
-        guard !tagName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            return false
-        }
-        
-        guard tagName.count <= 16 else {
-            return false
-        }
-        
-        return true
-    }
 }
 
 extension Note: Comparable {

@@ -5,6 +5,7 @@
 //  Created by Tiago Camargo Maciel dos Santos on 08/02/26.
 //
 
+import SwiftData
 import SwiftUI
 
 struct NoteView: View {
@@ -81,6 +82,7 @@ struct NoteView: View {
             
             Section("Note Content") {
                 TextEditor(text: $contentBody)
+                    .attributedTextFormattingDefinition(NoteFormattingDefinition())
                     .textInputAutocapitalization(.never)
                     .multilineTextAlignment(.leading)
                     .frame(height: 800)
@@ -100,8 +102,11 @@ struct NoteView: View {
         } message: {
             Text(viewModel.alertMessage)
         }
+        .onAppear {
+            applyChangesToAttributedText()
+        }
         .onChange(of: newTagName) { oldValue, newValue in
-            if note.isTagValid(newValue, allTags: viewModel.tags) {
+            if Tag.isNameValid(newValue, allTags: viewModel.tags) {
                 newTagName = newValue
             } else {
                 newTagName = oldValue
@@ -150,7 +155,7 @@ struct NoteView: View {
                         .labelIconToTitleSpacing(8)
                     }
                 }
-                if note.isTagValid(newTagName, allTags: viewModel.tags) {
+                if Tag.isNameValid(newTagName, allTags: viewModel.tags) {
                     Button("Create \(newTagName)", systemImage: "plus") {
                         withAnimation {
                             // TODO: - Lidar com isso e corrigir o bug do overlay das tags - e componentizar isso, para usar nas linkedNotes também.
@@ -195,6 +200,20 @@ struct NoteView: View {
     }
     
     // MARK: - Auxiliary functions
+    private func applyChangesToAttributedText() {
+        let notesToLinkTitles: [PersistentIdentifier: AttributedString] = Dictionary(uniqueKeysWithValues: viewModel.notes.map { ($0.persistentModelID, AttributedString($0.name)) })
+        var ranges: [PersistentIdentifier: RangeSet<AttributedString.Index>] = [:]
+        // TODO: - Arrumar os attributed strings para que a edição e alteração sejam feitos corretamente
+        for name in notesToLinkTitles {
+            ranges[name.key] = RangeSet(contentBody.characters.ranges(of: name.value.characters))
+        }
+        
+        for rangeSet in ranges {
+            contentBody[rangeSet.value].linkedNote = rangeSet.key
+            contentBody[rangeSet.value].link = URL.createDeepLinkURL(data: rangeSet.key)
+        }
+    }
+    
     private func saveChanges() {
         note.setName(name, allNotes: viewModel.notes)
         note.setParentSlipbox(parentSlipbox)

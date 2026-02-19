@@ -11,6 +11,7 @@ import SwiftUI
 typealias Position = Note.Position
 
 @Observable
+@MainActor
 final class MainViewModel {
     enum ViewState {
         case map, slipboxes
