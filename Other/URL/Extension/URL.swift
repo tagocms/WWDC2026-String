@@ -13,18 +13,14 @@ extension URL {
     static let customHost = "com.tiago.santos"
     static let customPath = "/noteview"
     
-    static func createDeepLinkURL(data: PersistentIdentifier) -> URL? {
+    static func createDeepLinkURL(data: UUID) -> URL? {
         var components = URLComponents()
         components.scheme = Self.customScheme
         components.host = Self.customHost
         components.path = Self.customPath
-        
-        let encoder = JSONEncoder()
-        if let encodedData = try? encoder.encode(data) {
-            components.queryItems = [
-                URLQueryItem(name: "data", value: encodedData.base64EncodedString())
-            ]
-        }
+        components.queryItems = [
+            URLQueryItem(name: "data", value: data.uuidString)
+        ]
         return components.url
     }
 }

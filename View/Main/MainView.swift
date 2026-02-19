@@ -13,7 +13,6 @@ struct MainView: View {
     // MARK: - Settings State
     @State private var isShowingSettings: Bool = false
     @AppStorage("isShowingUIControls") private var isShowingUIControls: Bool = true
-    @AppStorage("isUI3D") private var isUI3D: Bool = false
     
     // MARK: - Alert
     @State private var isAlertPresented = false
@@ -64,9 +63,8 @@ struct MainView: View {
                     let queryItems = components.queryItems else { return }
             for item in queryItems {
                 guard item.name == "data", let stringData = item.value else { continue }
-                let decoder = JSONDecoder()
-                guard let decodedData = try? decoder.decode(PersistentIdentifier.self, from: Data(base64Encoded: stringData) ?? Data()) else { return }
-                viewModel.selectedNote = viewModel.notes.first(where: { $0.persistentModelID == decodedData })
+                guard let uuid = UUID(uuidString: stringData) else { return }
+                viewModel.selectedNote = viewModel.notes.first(where: { $0.id == uuid })
             }
         }
         .preferredColorScheme(theme.colorScheme)
@@ -81,11 +79,11 @@ struct MainView: View {
         .sheet(item: $viewModel.selectedNote) { note in
             NoteView(note, viewModel: viewModel)
                 .presentationSizing(.page)
-                .navigationTransition(.zoom(sourceID: note.persistentModelID, in: noteNamespace))
+                .navigationTransition(.zoom(sourceID: note.id, in: noteNamespace))
         }
         .sheet(item: $viewModel.selectedSlipbox) { slipbox in
             SlipboxView(slipbox, viewModel: viewModel)
-                .navigationTransition(.zoom(sourceID: slipbox.persistentModelID, in: slipboxNamespace))
+                .navigationTransition(.zoom(sourceID: slipbox.id, in: slipboxNamespace))
         }
         .sheet(isPresented: $isShowingSettings) {
             SettingsView()
@@ -109,15 +107,6 @@ struct MainView: View {
                 }
                 .matchedTransitionSource(id: "settings", in: defaultNamespace)
             }
-        }
-        .onAppear {
-            var x = String()
-            dump(
-                NSDictionary(
-                    contentsOfFile: Bundle.main.path(forResource: "Info", ofType: "plist")!
-                ), to: &x
-            )
-            print("BANANA", x)
         }
     }
     
@@ -335,7 +324,7 @@ struct MainView: View {
                     .foregroundStyle(Color.appBackground)
                 }
             )
-            .matchedTransitionSource(id: note.persistentModelID, in: noteNamespace)
+            .matchedTransitionSource(id: note.id, in: noteNamespace)
             .contextMenu {
                 if !viewModel.isInExploringMode {
                     Menu("Link note to", systemImage: "link") {
@@ -390,7 +379,7 @@ struct MainView: View {
                 Label("Delete \(slipbox.name)", systemImage: "trash")
             }
         }
-        .matchedTransitionSource(id: slipbox.persistentModelID, in: slipboxNamespace)
+        .matchedTransitionSource(id: slipbox.id, in: slipboxNamespace)
     }
     
     // MARK: - UI Size methods

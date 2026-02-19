@@ -15,7 +15,8 @@ struct SettingsView: View {
 //    @Environment(\.colorScheme)
     @AppStorage("theme") private var theme: Theme = .system
     @AppStorage("isShowingUIControls") private var isShowingUIControls: Bool = true
-    @AppStorage("isUI3D") private var isUI3D: Bool = false
+    @AppStorage("automaticTagRemoval") private var automaticTagRemoval: Bool = false
+    @AppStorage("automaticLinkedNoteRemoval") private var automaticLinkedNoteRemoval: Bool = false
     @AppStorage("colorKey") private var accentColor: Color = Color(UIColor.systemBlue)
     
     var body: some View {
@@ -29,7 +30,8 @@ struct SettingsView: View {
                 }
                 ColorPicker("Accent color", selection: $accentColor, supportsOpacity: false)
                 Toggle("Show UI Controls", isOn: $isShowingUIControls)
-                Toggle("3D Mode", isOn: $isUI3D)
+                Toggle("Automatic Tag Removal", isOn: $automaticTagRemoval)
+                Toggle("Automatic Linked Note Removal", isOn: $automaticLinkedNoteRemoval)
             }
         }
         .presentationDragIndicator(.visible)

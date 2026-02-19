@@ -201,8 +201,8 @@ struct NoteView: View {
     
     // MARK: - Auxiliary functions
     private func applyChangesToAttributedText() {
-        let notesToLinkTitles: [PersistentIdentifier: AttributedString] = Dictionary(uniqueKeysWithValues: viewModel.notes.map { ($0.persistentModelID, AttributedString($0.name)) })
-        var ranges: [PersistentIdentifier: RangeSet<AttributedString.Index>] = [:]
+        let notesToLinkTitles: [UUID: AttributedString] = Dictionary(uniqueKeysWithValues: viewModel.notes.map { ($0.id, AttributedString($0.name)) })
+        var ranges: [UUID: RangeSet<AttributedString.Index>] = [:]
         // TODO: - Arrumar os attributed strings para que a edição e alteração sejam feitos corretamente
         for name in notesToLinkTitles {
             ranges[name.key] = RangeSet(contentBody.characters.ranges(of: name.value.characters))
@@ -211,6 +211,9 @@ struct NoteView: View {
         for rangeSet in ranges {
             contentBody[rangeSet.value].linkedNote = rangeSet.key
             contentBody[rangeSet.value].link = URL.createDeepLinkURL(data: rangeSet.key)
+            if let noteToLink = viewModel.notes.first(where: { $0.id == rangeSet.key }), !rangeSet.value.isEmpty {
+                linkedNotes.append(noteToLink)
+            }
         }
     }
     

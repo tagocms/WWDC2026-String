@@ -15,7 +15,6 @@ struct LinkedNotesAreTintColor: AttributedTextValueConstraint {
         if container.linkedNote != nil {
             // TODO: - Adicionar links para outras NoteView dentro das LinkedNotes
             container.foregroundColor = .accentColor
-//            print("Linked Notes are tint color rodou")
         } else {
             container.foregroundColor = nil
         }

@@ -20,10 +20,11 @@ final class Note: Identifiable, Named {
             sqrt(pow(Float(self.x - point.x), 2) + pow(Float(self.y - point.y), 2))
         }
     }
-    
+    @Attribute(.unique)
+    private(set) var id: UUID
     private(set) var dateCreated: Date
     private(set) var dateLastUpdated: Date
-
+    
     @Relationship(deleteRule: .nullify, inverse: \Tag.notes)
     private(set) var tags: [Tag]
     @Relationship(deleteRule: .nullify, inverse: \Note.backlinks)
@@ -37,8 +38,9 @@ final class Note: Identifiable, Named {
     private(set) var name: String
     private(set) var contentBody: AttributedString
     private(set) var position: Position
-
+    
     init(
+        id: UUID = UUID(),
         dateCreated: Date = Date.now,
         dateLastUpdated: Date = Date.now,
         tags: [Tag] = [],
@@ -48,6 +50,7 @@ final class Note: Identifiable, Named {
         contentBody: AttributedString = "",
         position: Position = .zero
     ) {
+        self.id = id
         self.dateCreated = dateCreated
         self.dateLastUpdated = dateLastUpdated
         self.tags = tags
@@ -75,6 +78,36 @@ final class Note: Identifiable, Named {
     func setName(_ name: String, allNotes: [Note]) {
         if isNameValid(name, allNotes: allNotes) {
             self.name = name
+            Note.alterTextInContentBody(self, allNotes: allNotes)
+        }
+    }
+    
+    static func alterTextInContentBody(_ alteredNote: Note, allNotes: [Note]) {
+        // Example: replace every run whose `linkedNote` equals `alteredNote.id`
+        // with the new note name, preserving the run's attributes.
+        for note in allNotes {
+            guard note.linkedNotes.contains(alteredNote) else { continue }
+            var body = note.contentBody
+            
+            // 1) Collect target ranges and their attributes (don’t mutate while iterating).
+            var targets: [(range: Range<AttributedString.Index>, attrs: AttributeContainer)] = []
+            for run in body.runs {
+                print("Altered Note: \(alteredNote.name) - ID \(alteredNote.id).")
+                print("Note to alter: \(note.name) - Attribute ID \(run.linkedNote)")
+                if run.linkedNote == alteredNote.id {
+                    targets.append((run.range, run.attributes))
+                }
+            }
+            
+            // 2) Replace from the end to keep earlier ranges valid.
+            for (range, attrs) in targets.reversed() {
+                // Create a replacement carrying the same attributes as the original run.
+                let replacement = AttributedString(alteredNote.name, attributes: attrs)
+                body.replaceSubrange(range, with: replacement)
+            }
+            
+            // 3) Write the mutated value back.
+            note.contentBody = body
         }
     }
     

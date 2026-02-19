@@ -5,17 +5,21 @@
 //  Created by Tiago Camargo Maciel dos Santos on 06/02/26.
 //
 
+import Foundation
 import SwiftData
 
 @Model
 final class Tag: Identifiable, Named {
+    @Attribute(.unique)
+    private(set) var id: UUID
     @Attribute(.unique)
     private(set) var name: String
     
     @Relationship(deleteRule: .nullify,)
     private(set) var notes: [Note] = []
     
-    init(name: String) {
+    init(id: UUID = UUID(), name: String) {
+        self.id = id
         self.name = name
     }
     

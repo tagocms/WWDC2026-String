@@ -11,6 +11,8 @@ import SwiftData
 @Model
 final class Slipbox: Identifiable, Named {
     // MARK: - Stored properties
+    @Attribute(.unique)
+    private(set) var id: UUID
     private(set) var dateCreated: Date
     private(set) var dateLastUpdated: Date
     
@@ -33,7 +35,13 @@ final class Slipbox: Identifiable, Named {
         return noteCount
     }
     
-    init(dateCreated: Date = Date.now, dateLastUpdated: Date = Date.now, title: String) {
+    init(
+        id: UUID = UUID(),
+        dateCreated: Date = Date.now,
+        dateLastUpdated: Date = Date.now,
+        title: String
+    ) {
+        self.id = id
         self.dateCreated = dateCreated
         self.dateLastUpdated = dateLastUpdated
         self.name = title
@@ -47,7 +55,6 @@ final class Slipbox: Identifiable, Named {
     }
     
     func setParentSlipbox(_ slipbox: Slipbox?) {
-        // TODO: VALIDATE IF THERE ARE NO CIRCULAR REFERENCES
         if isParentSlipboxValid(slipbox) {
             self.parentSlipbox = slipbox
         }

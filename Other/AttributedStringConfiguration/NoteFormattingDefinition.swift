@@ -23,6 +23,7 @@ struct NoteFormattingDefinition: AttributedTextFormattingDefinition {
         let link: AttributeScopes.FoundationAttributes.LinkAttribute
         let writingDirection: AttributeScopes.FoundationAttributes.WritingDirectionAttribute
         let textAlignment: AttributeScopes.CoreTextAttributes.TextAlignmentAttribute
+        let swiftUI: AttributeScopes.SwiftUIAttributes
         let tag: TagAttribute
         let linkedNote: LinkedNoteAttribute
     }
