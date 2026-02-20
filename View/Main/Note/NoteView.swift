@@ -206,7 +206,7 @@ struct NoteView: View {
     // MARK: - Auxiliary functions
     private func applyChangesToAttributedText() {
         // LinkedNotes
-        let notesToLinkTitles: [UUID: AttributedString] = Dictionary(uniqueKeysWithValues: viewModel.notes.map { ($0.id, AttributedString($0.name)) })
+        let notesToLinkTitles: [UUID: AttributedString] = Dictionary(uniqueKeysWithValues: viewModel.notes.map { ($0.id, AttributedString($0.formatName)) })
         var notesToLinkRanges: [UUID: RangeSet<AttributedString.Index>] = [:]
         
         for noteToLink in notesToLinkTitles {
@@ -225,7 +225,7 @@ struct NoteView: View {
         }
         
         // Tags
-        let tagTitles: [UUID: AttributedString] = Dictionary(uniqueKeysWithValues: viewModel.tags.map { ($0.id, AttributedString("#\($0.name)")) })
+        let tagTitles: [UUID: AttributedString] = Dictionary(uniqueKeysWithValues: viewModel.tags.map { ($0.id, AttributedString($0.formatName)) })
         var tagRanges: [UUID: RangeSet<AttributedString.Index>] = [:]
         
         for tagTitle in tagTitles {

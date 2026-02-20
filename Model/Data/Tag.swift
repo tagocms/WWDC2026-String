@@ -9,7 +9,7 @@ import Foundation
 import SwiftData
 
 @Model
-final class Tag: Identifiable, Named {
+final class Tag: Identifiable, Named, AutoFormatable {
     @Attribute(.unique)
     private(set) var id: UUID
     @Attribute(.unique)
@@ -17,6 +17,11 @@ final class Tag: Identifiable, Named {
     
     @Relationship(deleteRule: .nullify,)
     private(set) var notes: [Note] = []
+    
+    /// Variable used to standardize tag formatting
+    var formatName: String {
+        return "/\(name)/"
+    }
     
     init(id: UUID = UUID(), name: String) {
         self.id = id
