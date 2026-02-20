@@ -82,12 +82,13 @@ final class Note: Identifiable, Named, AutoFormatable {
     
     func setName(_ name: String, allNotes: [Note]) {
         if isNameValid(name, allNotes: allNotes) {
+            let oldName = self.formatName
             self.name = name
-
-            Note.alterTextInContentBodyForAllNotes(self, allNotes: allNotes) { noteToCheck, alteredItem in
+            
+            var container = AttributeContainer()
+            container.linkedNote = self.id
+            Note.alterTextInContentBodyForAllNotes(self, oldFormattedName: oldName, allNotes: allNotes, attributes: container) { noteToCheck, alteredItem in
                 noteToCheck.linkedNotes.contains(alteredItem)
-            } shouldRunBeChanged: { runToCheck, alteredItem in
-                runToCheck.linkedNote == alteredItem.id
             }
 
         }

@@ -12,23 +12,22 @@ protocol AutoFormatable {
 }
 
 extension AutoFormatable {
-    static func alterTextInContentBodyForAllNotes<T: AutoFormatable & Identifiable>(_ alteredItem: T, allNotes: [Note], shouldItemBeChecked: (_ noteToCheck: Note, _ alteredItem: T) -> Bool, shouldRunBeChanged: (_ runToCheck: AttributedString.Runs.Element, _ alteredItem: T) -> Bool, shouldDelete: Bool = false) {
+    static func alterTextInContentBodyForAllNotes<T: AutoFormatable & Identifiable>(
+        _ alteredItem: T,
+        oldFormattedName: String,
+        allNotes: [Note],
+        shouldDelete: Bool = false,
+        attributes: AttributeContainer,
+        shouldItemBeChecked: (_ noteToCheck: Note, _ alteredItem: T) -> Bool
+    ) {
         for note in allNotes {
             guard shouldItemBeChecked(note, alteredItem) else { continue }
             var body = note.contentBody
-            
-            var targets: [(range: Range<AttributedString.Index>, attrs: AttributeContainer)] = []
-            for run in body.runs {
-                if shouldRunBeChanged(run, alteredItem) {
-                    targets.append((run.range, run.attributes))
-                }
-            }
-            
-            for (range, attributes) in targets.reversed() {
+            let targets = body.characters.ranges(of: AttributedString(oldFormattedName).characters)
+            for range in targets.reversed() {
                 let replacement = AttributedString(shouldDelete ? "" : alteredItem.formatName, attributes: attributes)
                 body.replaceSubrange(range, with: replacement)
             }
-            
             note.setContent(body)
         }
     }

@@ -20,7 +20,7 @@ final class Tag: Identifiable, Named, AutoFormatable {
     
     /// Variable used to standardize tag formatting
     var formatName: String {
-        return "/\(name)/"
+        return "#\(name)"
     }
     
     init(id: UUID = UUID(), name: String) {

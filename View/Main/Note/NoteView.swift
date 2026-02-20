@@ -58,6 +58,8 @@ struct NoteView: View {
                 }
                 .font(.title3.bold())
                 
+                
+                
                 HStack(spacing: 16) {
                     Text("Tags")
                         .font(.title3.bold())
@@ -245,11 +247,11 @@ struct NoteView: View {
     }
     
     private func saveChanges() {
+        note.setContent(contentBody)
         note.setName(name, allNotes: viewModel.notes)
         note.setParentSlipbox(parentSlipbox)
         note.setTags(tags)
         note.setLinkedNotes(linkedNotes)
-        note.setContent(contentBody)
         try? viewModel.modelContext?.save()
     }
 }
