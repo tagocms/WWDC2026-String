@@ -6,7 +6,7 @@ struct MyApp: App {
     var body: some Scene {
         WindowGroup {
             MainView()
-                .modelContainer(for: Slipbox.self)
+                .modelContainer(for: Slipbox.self, isAutosaveEnabled: true)
         }
     }
 }

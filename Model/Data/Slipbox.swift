@@ -46,8 +46,20 @@ final class Slipbox: Identifiable, Named {
         self.dateLastUpdated = dateLastUpdated
         self.name = title
     }
-    
-    // MARK: - Setters
+}
+
+extension Slipbox: Comparable {
+    static func < (lhs: Slipbox, rhs: Slipbox) -> Bool {
+        lhs.name < rhs.name
+    }
+}
+
+extension Slipbox: StandardFetchable {
+    static let fetchDescriptor: FetchDescriptor<Slipbox> = FetchDescriptor(sortBy: [SortDescriptor(\.name, order: .forward)])
+}
+
+// MARK: - Setter methods
+extension Slipbox {
     func setName(_ name: String, allSlipboxes: [Slipbox]) {
         if isNameValid(name, allSlipboxes: allSlipboxes) {
             self.name = name
@@ -59,8 +71,10 @@ final class Slipbox: Identifiable, Named {
             self.parentSlipbox = slipbox
         }
     }
-    
-    // MARK: - Auxiliary
+}
+
+// MARK: - Auxiliary methods
+extension Slipbox {
     func isParentSlipboxValid(_ newParentSlipbox: Slipbox?, originalSlipbox: Slipbox? = nil) -> Bool {
         guard let newParentSlipbox else { return true }
         guard newParentSlipbox !== self else { return false }
@@ -87,11 +101,5 @@ final class Slipbox: Identifiable, Named {
         }
         
         return true
-    }
-}
-
-extension Slipbox: Comparable {
-    static func < (lhs: Slipbox, rhs: Slipbox) -> Bool {
-        lhs.name < rhs.name
     }
 }

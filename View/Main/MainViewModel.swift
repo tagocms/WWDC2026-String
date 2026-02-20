@@ -12,14 +12,9 @@ typealias Position = Note.Position
 
 @Observable
 @MainActor
-final class MainViewModel {
-    enum ViewState {
-        case map, slipboxes
-    }
-    
+class MainViewModel {
     // MARK: - Properties
-    private(set) var modelContext: ModelContext?
-    private(set) var viewState: ViewState
+    private(set) var modelContext: ModelContext
     private(set) var isInExploringMode: Bool = true
     
     // MARK: - Selected models
@@ -35,8 +30,7 @@ final class MainViewModel {
     
     // MARK: - Model arrays
     var notes: [Note] {
-        let fetchDescriptor = FetchDescriptor<Note>(sortBy: [])
-        return ((try? modelContext?.fetch(fetchDescriptor)) ?? []).sorted()
+        return ((try? modelContext.fetch(Note.fetchDescriptor)) ?? [])
     }
     var filteredNotes: [Note] {
         notes.filter { note in
@@ -55,11 +49,11 @@ final class MainViewModel {
     }
     var slipboxes: [Slipbox] {
         let fetchDescriptor = FetchDescriptor<Slipbox>(sortBy: [])
-        return ((try? modelContext?.fetch(fetchDescriptor)) ?? []).sorted()
+        return ((try? modelContext.fetch(fetchDescriptor)) ?? []).sorted()
     }
     var tags: [Tag] {
         let fetchDescriptor = FetchDescriptor<Tag>(sortBy: [])
-        return ((try? modelContext?.fetch(fetchDescriptor)) ?? []).sorted()
+        return ((try? modelContext.fetch(fetchDescriptor)) ?? []).sorted()
     }
     
     // MARK: - Alert
@@ -97,18 +91,23 @@ final class MainViewModel {
     }
     
     // MARK: - Initializer functions
-    init(_ modelContext: ModelContext? = nil, viewState: ViewState = .map) {
+    init(_ modelContext: ModelContext) {
         self.modelContext = modelContext
-        self.viewState = viewState
     }
     
-    func setModelContext(_ modelContext: ModelContext) {
-        self.modelContext = modelContext
+    func receiveAndTreatURL(_ url: URL) {
+        guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+                let queryItems = components.queryItems else { return }
+        for item in queryItems {
+            guard item.name == "data", let stringData = item.value else { continue }
+            guard let uuid = UUID(uuidString: stringData) else { return }
+            selectedNote = notes.first(where: { $0.id == uuid })
+        }
     }
     
     // MARK: - Mock data
-    func buildExampleData() {
-        if slipboxes.isEmpty, notes.isEmpty, let modelContext {
+    func buildInitialData() {
+        if slipboxes.isEmpty, notes.isEmpty {
             let slipbox = Slipbox(title: "General")
             modelContext.insert(slipbox)
             let firstNote = Note(slipbox: slipbox, title: "Nota 1")
@@ -126,29 +125,14 @@ final class MainViewModel {
     }
 
     // MARK: - Setters
-    func setViewState(to viewState: ViewState) {
-        self.viewState = viewState
-    }
-    
     func toggleExploringMode() {
         self.isInExploringMode.toggle()
     }
     
     // MARK: - Intent methods
-    func onMultitouchGesture(_ value: MultitouchGestureRecognizer.Value, perform action: (() -> Void)? = nil) {
-        withAnimation {
-            if value.translation.height < -50 && viewState != .slipboxes {
-                setViewState(to: .slipboxes)
-            } else if value.translation.height > 50 && viewState != .map {
-                action?()
-                setViewState(to: .map)
-            }
-        }
-    }
-    
     func updateNotePosition(_ note: Note, to point: CGPoint, in geometry: GeometryProxy, panOffset: CGOffset, zoom: CGFloat, rotation: Angle) {
         note.updatePosition(to: .converted(from: point, in: geometry, panOffset: panOffset, zoom: zoom, rotation: rotation))
-        try? modelContext?.save()
+        try? modelContext.save()
     }
     
     private func createNewNote(in slipbox: Slipbox) {
@@ -221,7 +205,19 @@ final class MainViewModel {
         let _ = createAndReturnNewTag(name: name)
     }
     
+    func onFilterTagTapped(_ tag: Tag) {
+        if filterTags.contains(tag) {
+            filterTags.removeAll(where: { $0 === tag })
+        } else {
+            filterTags.append(tag)
+        }
+    }
+    
     // MARK: - Auxiliary methods
+    func shouldAllowLink(for note: Note, possibleLink: Note) -> Bool {
+        note != possibleLink && !note.linkedNotes.contains(possibleLink)
+    }
+    
     private func nameWithoutDuplicates<T: Named>(for collection: [T]) -> String {
         var name = "Untitled"
         var number = 0
@@ -236,13 +232,13 @@ final class MainViewModel {
     }
     
     private func createAndSaveToModelContext<T: PersistentModel>(_ item: T) {
-        modelContext?.insert(item)
-        try? modelContext?.save()
+        modelContext.insert(item)
+        try? modelContext.save()
     }
     
     private func deleteAndSaveToModelContext<T: PersistentModel>(_ item: T) {
-        modelContext?.delete(item)
-        try? modelContext?.save()
+        modelContext.delete(item)
+        try? modelContext.save()
     }
     
     private func isNoteInSlipbox(_ note: Note, slipbox: Slipbox) -> Bool {

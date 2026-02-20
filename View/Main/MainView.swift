@@ -4,7 +4,7 @@ import SwiftUI
 struct MainView: View {
     // MARK: - Data
     @Environment(\.modelContext) private var modelContext
-    @State private var viewModel: MainViewModel = MainViewModel()
+    @State private var viewModel: MainViewModel!
     
     // MARK: - Theme and accent color
     @AppStorage("theme") private var theme: Theme = .system
@@ -20,6 +20,12 @@ struct MainView: View {
     // MARK: - Constants
     struct Constants {
         static let cornerRadius: CGFloat = 12
+        static let standardPadding: CGFloat = 8
+        
+        static let dockBarZIndex: Double = 1000
+        static let dockBarDividerHeight: CGFloat = 66
+        static let dockBarSpacing: CGFloat = 12
+        
         static let noteWidth: CGFloat = 150
         static let aspectRatio: CGFloat = 3/4
         static let cardZIndex: Double = 999
@@ -27,6 +33,8 @@ struct MainView: View {
             width: Constants.noteWidth,
             height: Constants.noteWidth / Constants.aspectRatio
         )
+        
+        static let linkLineZIndex: Double = 0
     }
     
     // MARK: - View UI State
@@ -58,55 +66,55 @@ struct MainView: View {
         NavigationStack {
             fullViewBody
         }
-        .onOpenURL { url in
-            guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
-                    let queryItems = components.queryItems else { return }
-            for item in queryItems {
-                guard item.name == "data", let stringData = item.value else { continue }
-                guard let uuid = UUID(uuidString: stringData) else { return }
-                viewModel.selectedNote = viewModel.notes.first(where: { $0.id == uuid })
+        .task {
+            if viewModel == nil {
+                viewModel = MainViewModel(modelContext)
+                viewModel.buildInitialData()
             }
+        }
+        .onOpenURL { url in
+            viewModel.receiveAndTreatURL(url)
         }
         .preferredColorScheme(theme.colorScheme)
         .tint(accentColor)
     }
-    
-    // MARK: - View Body components
+}
+
+// MARK: - View Body components
+extension MainView {
     private var fullViewBody: some View {
-        GeometryReader { geometry in
-            buildContentBodyWithModifiers(in: geometry)
-        }
-        .sheet(item: $viewModel.selectedNote) { note in
-            NoteView(note, viewModel: viewModel)
-                .presentationSizing(.page)
-                .navigationTransition(.zoom(sourceID: note.id, in: noteNamespace))
-        }
-        .sheet(item: $viewModel.selectedSlipbox) { slipbox in
-            SlipboxView(slipbox, viewModel: viewModel)
-                .navigationTransition(.zoom(sourceID: slipbox.id, in: slipboxNamespace))
-        }
-        .sheet(isPresented: $isShowingSettings) {
-            SettingsView()
-                .navigationTransition(.zoom(sourceID: "settings", in: defaultNamespace))
-        }
-        .alert(viewModel.alertTitle, isPresented: $isAlertPresented) {
-            viewModel.buildAlertActions()
-        } message: {
-            Text(viewModel.alertMessage)
-        }
-        .task {
-            if viewModel.modelContext == nil {
-                viewModel.setModelContext(modelContext)
-                viewModel.buildExampleData()
+        if let bindingToViewModel = Bindable(viewModel) {
+            GeometryReader { geometry in
+                buildContentBodyWithModifiers(in: geometry)
             }
-        }
-        .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                Button("Settings", systemImage: "gear") {
-                    isShowingSettings.toggle()
+            .sheet(item: bindingToViewModel.selectedNote) { note in
+                NoteView(note)
+                    .presentationSizing(.page)
+                    .navigationTransition(.zoom(sourceID: note.id, in: noteNamespace))
+            }
+            .sheet(item: bindingToViewModel.selectedSlipbox) { slipbox in
+                SlipboxView(slipbox)
+                    .navigationTransition(.zoom(sourceID: slipbox.id, in: slipboxNamespace))
+            }
+            .sheet(isPresented: $isShowingSettings) {
+                SettingsView()
+                    .navigationTransition(.zoom(sourceID: "settings", in: defaultNamespace))
+            }
+            .alert(viewModel.alertTitle, isPresented: $isAlertPresented) {
+                viewModel.buildAlertActions()
+            } message: {
+                Text(viewModel.alertMessage)
+            }
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Settings", systemImage: "gear") {
+                        isShowingSettings.toggle()
+                    }
+                    .matchedTransitionSource(id: "settings", in: defaultNamespace)
                 }
-                .matchedTransitionSource(id: "settings", in: defaultNamespace)
             }
+        } else {
+            ProgressView().font(.largeTitle)
         }
     }
     
@@ -128,8 +136,8 @@ struct MainView: View {
         HStack(alignment: .dockBarLastTextBaseline) {
             slipboxesDockBarButtons
             Divider()
-                .padding(.horizontal, 8)
-                .frame(height: 66)
+                .padding(.horizontal, Constants.standardPadding)
+                .frame(height: Constants.dockBarDividerHeight)
             fixedDockBarButtons
                 .alignmentGuide(VerticalAlignment.dockBarLastTextBaseline) { dimension in
                     dimension[VerticalAlignment.bottom]
@@ -139,13 +147,13 @@ struct MainView: View {
         .background(.ultraThinMaterial)
         .clipShape(.buttonBorder)
         .padding()
-        .zIndex(1000)
+        .zIndex(Constants.dockBarZIndex)
     }
     
     @ViewBuilder
     private var slipboxesDockBarButtons: some View {
         ScrollView(.horizontal) {
-            HStack(alignment: .dockBarLastTextBaseline, spacing: 12) {
+            HStack(alignment: .dockBarLastTextBaseline, spacing: Constants.dockBarSpacing) {
                 Button {
                     viewModel.filterSlipbox = nil
                 } label: {
@@ -168,7 +176,7 @@ struct MainView: View {
     
     @ViewBuilder
     private var fixedDockBarButtons: some View {
-        HStack(alignment: .dockBarLastTextBaseline, spacing: 12) {
+        HStack(alignment: .dockBarLastTextBaseline, spacing: Constants.dockBarSpacing) {
             createNewNoteAndSlipboxButtons
             filterMenuButton
         }
@@ -198,10 +206,7 @@ struct MainView: View {
                         tag.name,
                         systemImage: viewModel.filterTags.contains(tag) ? "checkmark.circle" : "circle"
                     ) {
-                        if viewModel.filterTags.contains(tag) { viewModel.filterTags.removeAll(where: { $0 === tag })
-                        } else {
-                            viewModel.filterTags.append(tag)
-                        }
+                        viewModel.onFilterTagTapped(tag)
                     }
                 }
             }
@@ -272,7 +277,7 @@ struct MainView: View {
             ForEach(note.linkedNotes) { linkedNote in
                 buildNotePath(from: note, to: linkedNote, in: geometry)
             }
-            .zIndex(0)
+            .zIndex(Constants.linkLineZIndex)
             buildNoteCard(note, in: geometry)
         }
     }
@@ -289,6 +294,57 @@ struct MainView: View {
     }
     
     @ViewBuilder
+    private func buildNoteCardTags(_ note: Note, in geometry: GeometryProxy) -> some View {
+        HStack(alignment: .center) {
+            Image(systemName: "tag")
+                .frame(width: geometry.size.width * 0.2)
+            LazyVGrid(
+                columns: [
+                    GridItem(
+                        .fixed(geometry.size.width * 0.5)
+                    )
+                ],
+                alignment: .leading,
+                spacing: 0
+            ) {
+                ForEach(note.tags) { tag in
+                    Text("\(tag.name)")
+                        .font(.caption)
+                        .lineLimit(1)
+                        .padding(.vertical, Constants.standardPadding)
+                }
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private func buildContextMenu(for note: Note) -> some View {
+        if !viewModel.isInExploringMode {
+            Menu("Link note to", systemImage: "link") {
+                ForEach(viewModel.notes) { possibleLink in
+                    if viewModel.shouldAllowLink(for: note, possibleLink: possibleLink) {
+                        Button(possibleLink.name) {
+                            viewModel.setLink(from: note, to: possibleLink)
+                        }
+                    }
+                }
+            }
+            Menu("Remove link to", systemImage: "nosign") {
+                ForEach(note.linkedNotes.sorted()) { link in
+                    Button(link.name, role: .cancel) {
+                        viewModel.removeLink(from: note, to: link)
+                    }
+                }
+            }
+        } else {
+            Button("Delete note", systemImage: "trash", role: .destructive) {
+                viewModel.noteToDelete = note
+                isAlertPresented = true
+            }
+        }
+    }
+    
+    @ViewBuilder
     private func buildNoteCard(_ note: Note, in geometry: GeometryProxy) -> some View {
         RoundedRectangle(cornerRadius: Constants.cornerRadius)
             .fill(Color.accentColor)
@@ -300,55 +356,16 @@ struct MainView: View {
                         Text("\(note.name)")
                             .font(.title3.bold())
                         if !note.tags.isEmpty {
-                            HStack(alignment: .center) {
-                                Image(systemName: "tag")
-                                    .frame(width: cardGeometry.size.width * 0.2)
-                                LazyVGrid(
-                                    columns: [
-                                        GridItem(
-                                            .fixed(cardGeometry.size.width * 0.6)
-                                        )
-                                    ],
-                                    alignment: .leading
-                                ) {
-                                    ForEach(note.tags) { tag in
-                                        Text("\(tag.name)")
-                                            .font(.caption)
-                                            .lineLimit(1)
-                                    }
-                                }
-                            }
+                            buildNoteCardTags(note, in: geometry)
                         }
                     }
-                    .padding(8)
+                    .padding(Constants.standardPadding)
                     .foregroundStyle(Color.appBackground)
                 }
             )
             .matchedTransitionSource(id: note.id, in: noteNamespace)
             .contextMenu {
-                if !viewModel.isInExploringMode {
-                    Menu("Link note to", systemImage: "link") {
-                        ForEach(viewModel.notes) { possibleLink in
-                            if note != possibleLink, !note.linkedNotes.contains(possibleLink) {
-                                Button(possibleLink.name) {
-                                    viewModel.setLink(from: note, to: possibleLink)
-                                }
-                            }
-                        }
-                    }
-                    Menu("Remove link to", systemImage: "nosign") {
-                        ForEach(note.linkedNotes.sorted()) { link in
-                            Button(link.name, role: .cancel) {
-                                viewModel.removeLink(from: note, to: link)
-                            }
-                        }
-                    }
-                } else {
-                    Button("Delete note", systemImage: "trash", role: .destructive) {
-                        viewModel.noteToDelete = note
-                        isAlertPresented = true
-                    }
-                }
+                buildContextMenu(for: note)
             }
             .position(note.position.convertToCGPoint(in: geometry))
             .onTapGesture {
@@ -381,8 +398,10 @@ struct MainView: View {
         }
         .matchedTransitionSource(id: slipbox.id, in: slipboxNamespace)
     }
-    
-    // MARK: - UI Size methods
+}
+
+// MARK: - UI Size methods
+extension MainView {
     private func boundingBox(for note: Note) -> CGRect {
         let bbox = CGRect(
             center: note.position.convertToCGPoint(),
@@ -423,8 +442,11 @@ struct MainView: View {
             )
         }
     }
-    
-    // MARK: - Gestures
+}
+
+
+// MARK: - Gestures
+extension MainView {
     private var allGestures: some Gesture {
         panGesture
             .simultaneously(with: magnificationGesture)
@@ -470,7 +492,11 @@ struct MainView: View {
     private var multitouchGesture: some UIGestureRecognizerRepresentable {
         MultitouchGestureRecognizer()
             .onEnded { value in
-                viewModel.onMultitouchGesture(value)
+                if value.translation.height >= 50 && isShowingUIControls {
+                    isShowingUIControls = false
+                } else if value.translation.height < 50 && !isShowingUIControls {
+                    isShowingUIControls = true
+                }
             }
     }
     

@@ -19,7 +19,7 @@ struct NoteView: View {
     @AppStorage("colorKey") private var accentColor: Color = Color(UIColor.systemBlue)
     
     // MARK: - Data
-    let note: Note
+    @Bindable var note: Note
     @Bindable private var viewModel: MainViewModel
     
     // MARK: - Data UI State
@@ -252,6 +252,5 @@ struct NoteView: View {
         note.setParentSlipbox(parentSlipbox)
         note.setTags(tags)
         note.setLinkedNotes(linkedNotes)
-        try? viewModel.modelContext?.save()
     }
 }

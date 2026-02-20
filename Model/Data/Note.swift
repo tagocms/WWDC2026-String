@@ -9,7 +9,7 @@ import Foundation
 import SwiftData
 
 @Model
-final class Note: Identifiable, Named, AutoFormatable {
+final class Note: Identifiable, Named {
     // MARK: - Model initializers and properties
     struct Position: Codable {
         var x: Int
@@ -39,11 +39,6 @@ final class Note: Identifiable, Named, AutoFormatable {
     private(set) var contentBody: AttributedString
     private(set) var position: Position
     
-    /// Variable used to standardize link formatting
-    var formatName: String {
-        return "/\(name)/"
-    }
-    
     init(
         id: UUID = UUID(),
         dateCreated: Date = Date.now,
@@ -65,8 +60,33 @@ final class Note: Identifiable, Named, AutoFormatable {
         self.contentBody = contentBody
         self.position = position
     }
-    
-    // MARK: - Setter methods
+}
+
+extension Note: Comparable {
+    static func <(lhs: Note, rhs: Note) -> Bool {
+        lhs.name < rhs.name
+    }
+}
+
+extension Note: Equatable {
+    static func ==(lhs: Note, rhs: Note) -> Bool {
+        lhs.id == rhs.id
+    }
+}
+
+extension Note: AutoFormatable {
+    /// Variable used to standardize link formatting
+    var formatName: String {
+        return "/\(name)/"
+    }
+}
+
+extension Note: StandardFetchable {
+    static let fetchDescriptor: FetchDescriptor<Note> = FetchDescriptor(sortBy: [SortDescriptor(\.name, order: .forward)])
+}
+
+// MARK: - Setter methods
+extension Note {
     func updatePosition(to position: Position) {
         self.position = position
     }
@@ -113,8 +133,10 @@ final class Note: Identifiable, Named, AutoFormatable {
     func setContent(_ contentBody: AttributedString) {
         self.contentBody = contentBody
     }
-    
-    // MARK: - Auxiliary
+}
+
+// MARK: - Auxiliary methods
+extension Note {
     func isNameValid(_ name: String, allNotes: [Note]) -> Bool {
         for note in allNotes {
             if note != self {
@@ -133,17 +155,5 @@ final class Note: Identifiable, Named, AutoFormatable {
         }
         
         return true
-    }
-}
-
-extension Note: Comparable {
-    static func <(lhs: Note, rhs: Note) -> Bool {
-        lhs.name < rhs.name
-    }
-}
-
-extension Note: Equatable {
-    static func ==(lhs: Note, rhs: Note) -> Bool {
-        lhs.id == rhs.id
     }
 }

@@ -13,7 +13,7 @@ struct SlipboxView: View {
     @Environment(\.dismiss) private var dismiss
     
     // MARK: - Data
-    let slipbox: Slipbox
+    @Bindable var slipbox: Slipbox
     @Bindable private var viewModel: MainViewModel
     
     // MARK: - Data UI State
