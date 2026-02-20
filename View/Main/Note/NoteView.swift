@@ -83,6 +83,7 @@ struct NoteView: View {
             Section("Note Content") {
                 TextEditor(text: $contentBody)
                     .attributedTextFormattingDefinition(NoteFormattingDefinition())
+                    .autocorrectionDisabled()
                     .textInputAutocapitalization(.never)
                     .multilineTextAlignment(.leading)
                     .frame(height: 800)
@@ -103,6 +104,9 @@ struct NoteView: View {
             Text(viewModel.alertMessage)
         }
         .onAppear {
+            applyChangesToAttributedText()
+        }
+        .onChange(of: contentBody) {
             applyChangesToAttributedText()
         }
         .onChange(of: newTagName) { oldValue, newValue in
@@ -201,18 +205,41 @@ struct NoteView: View {
     
     // MARK: - Auxiliary functions
     private func applyChangesToAttributedText() {
+        // LinkedNotes
         let notesToLinkTitles: [UUID: AttributedString] = Dictionary(uniqueKeysWithValues: viewModel.notes.map { ($0.id, AttributedString($0.name)) })
-        var ranges: [UUID: RangeSet<AttributedString.Index>] = [:]
-        // TODO: - Arrumar os attributed strings para que a edição e alteração sejam feitos corretamente
-        for name in notesToLinkTitles {
-            ranges[name.key] = RangeSet(contentBody.characters.ranges(of: name.value.characters))
+        var notesToLinkRanges: [UUID: RangeSet<AttributedString.Index>] = [:]
+        
+        for noteToLink in notesToLinkTitles {
+            notesToLinkRanges[noteToLink.key] = RangeSet(contentBody.characters.ranges(of: noteToLink.value.characters))
         }
         
-        for rangeSet in ranges {
+        for rangeSet in notesToLinkRanges {
+            guard let noteToLink = viewModel.notes.first(where: { $0.id == rangeSet.key }),
+                  !rangeSet.value.isEmpty else {
+                continue
+            }
             contentBody[rangeSet.value].linkedNote = rangeSet.key
-            contentBody[rangeSet.value].link = URL.createDeepLinkURL(data: rangeSet.key)
-            if let noteToLink = viewModel.notes.first(where: { $0.id == rangeSet.key }), !rangeSet.value.isEmpty {
+            if !linkedNotes.contains(noteToLink) {
                 linkedNotes.append(noteToLink)
+            }
+        }
+        
+        // Tags
+        let tagTitles: [UUID: AttributedString] = Dictionary(uniqueKeysWithValues: viewModel.tags.map { ($0.id, AttributedString("#\($0.name)")) })
+        var tagRanges: [UUID: RangeSet<AttributedString.Index>] = [:]
+        
+        for tagTitle in tagTitles {
+            tagRanges[tagTitle.key] = RangeSet(contentBody.characters.ranges(of: tagTitle.value.characters))
+        }
+        
+        for rangeSet in tagRanges {
+            guard let tag = viewModel.tags.first(where: { $0.id == rangeSet.key }),
+                  !rangeSet.value.isEmpty else {
+                continue
+            }
+            contentBody[rangeSet.value].tag = rangeSet.key
+            if !tags.contains(tag) {
+                tags.append(tag)
             }
         }
     }
@@ -223,5 +250,6 @@ struct NoteView: View {
         note.setTags(tags)
         note.setLinkedNotes(linkedNotes)
         note.setContent(contentBody)
+        try? viewModel.modelContext?.save()
     }
 }
