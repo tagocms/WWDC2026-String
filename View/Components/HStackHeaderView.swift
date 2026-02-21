@@ -8,7 +8,7 @@
 //import SwiftUI
 //
 //struct HStackHeaderView<T: Hashable & Identifiable & Named>: View {
-//    @AppStorage("colorKey") private var accentColor = Color(UIColor.systemBlue)
+//    @AppStorage("colorKey") private var accentColor = Color.accentColor
 //    @Binding var collection: [T]
 //    @Binding var text: String
 //    @FocusState var focusState: NoteView.NoteViewFocusState?

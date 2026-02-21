@@ -11,5 +11,26 @@ import SwiftUI
 @Observable
 @MainActor
 final class SlipboxViewModel: MainViewModel {
-    //
+    // MARK: - Data UI State
+    var name: String {
+        get {
+            selectedSlipbox?.name ?? ""
+        }
+        set {
+            selectedSlipbox?.setName(newValue, allSlipboxes: slipboxes)
+        }
+    }
+    var parentSlipbox: Slipbox? {
+        get {
+            selectedSlipbox?.parentSlipbox
+        }
+        set {
+            selectedSlipbox?.setParentSlipbox(newValue)
+        }
+    }
+    
+    init(_ modelContext: ModelContext, slipbox: Slipbox) {
+        super.init(modelContext)
+        self.selectedSlipbox = slipbox
+    }
 }

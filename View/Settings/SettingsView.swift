@@ -17,7 +17,7 @@ struct SettingsView: View {
     @AppStorage("isShowingUIControls") private var isShowingUIControls: Bool = true
     @AppStorage("automaticTagRemoval") private var automaticTagRemoval: Bool = false
     @AppStorage("automaticLinkedNoteRemoval") private var automaticLinkedNoteRemoval: Bool = false
-    @AppStorage("colorKey") private var accentColor: Color = Color(UIColor.systemBlue)
+    @AppStorage("colorKey") private var accentColor: Color = Color.accentColor
     
     var body: some View {
         Form {

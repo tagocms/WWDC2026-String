@@ -16,7 +16,7 @@ struct NoteView: View {
     @Environment(\.dismiss) private var dismiss
     
     // MARK: - Accent color
-    @AppStorage("colorKey") private var accentColor: Color = Color(UIColor.systemBlue)
+    @AppStorage("colorKey") private var accentColor: Color = Color.accentColor
     
     // MARK: - Data
     @Bindable var note: Note

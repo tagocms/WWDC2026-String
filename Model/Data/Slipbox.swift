@@ -64,12 +64,14 @@ extension Slipbox {
     func setName(_ name: String, allSlipboxes: [Slipbox]) {
         if isNameValid(name, allSlipboxes: allSlipboxes) {
             self.name = name
+            self.dateLastUpdated = .now
         }
     }
     
     func setParentSlipbox(_ slipbox: Slipbox?) {
         if isParentSlipboxValid(slipbox) {
             self.parentSlipbox = slipbox
+            self.dateLastUpdated = .now
         }
     }
 }

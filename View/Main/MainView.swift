@@ -8,7 +8,7 @@ struct MainView: View {
     
     // MARK: - Theme and accent color
     @AppStorage("theme") private var theme: Theme = .system
-    @AppStorage("colorKey") private var accentColor: Color = Color(UIColor.systemBlue)
+    @AppStorage("colorKey") private var accentColor: Color = Color.accentColor
     
     // MARK: - Settings State
     @State private var isShowingSettings: Bool = false
@@ -84,7 +84,7 @@ struct MainView: View {
 // MARK: - View Body components
 extension MainView {
     private var fullViewBody: some View {
-        if let bindingToViewModel = Bindable(viewModel) {
+        if let bindingToViewModel = Binding($viewModel) {
             GeometryReader { geometry in
                 buildContentBodyWithModifiers(in: geometry)
             }
