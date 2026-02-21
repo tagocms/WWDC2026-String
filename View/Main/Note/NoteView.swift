@@ -248,7 +248,7 @@ struct NoteView: View {
     
     private func saveChanges() {
         note.setContent(contentBody)
-        note.setName(name, allNotes: viewModel.notes)
+        note.setNameAndUpdateAllNotes(name, allNotes: viewModel.notes)
         note.setParentSlipbox(parentSlipbox)
         note.setTags(tags)
         note.setLinkedNotes(linkedNotes)

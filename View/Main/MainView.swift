@@ -55,6 +55,7 @@ struct MainView: View {
     private var totalRotation: Angle {
         rotation + rotationGestureState
     }
+    @State private var isInExploringMode: Bool = true
     
     // MARK: - View animations
     @Namespace private var noteNamespace
@@ -120,9 +121,9 @@ extension MainView {
     
     private var exploringModeButton: some View {
         Button {
-            viewModel.toggleExploringMode()
+            isInExploringMode.toggle()
         } label: {
-            if viewModel.isInExploringMode {
+            if isInExploringMode {
                 IconAndTextView(iconName: "hand.draw", text: "Explore mode")
             } else {
                 IconAndTextView(iconName: "link", text: "Link mode")
@@ -319,7 +320,7 @@ extension MainView {
     
     @ViewBuilder
     private func buildContextMenu(for note: Note) -> some View {
-        if !viewModel.isInExploringMode {
+        if !isInExploringMode {
             Menu("Link note to", systemImage: "link") {
                 ForEach(viewModel.notes) { possibleLink in
                     if viewModel.shouldAllowLink(for: note, possibleLink: possibleLink) {
@@ -504,7 +505,7 @@ extension MainView {
         DragGesture()
             .onChanged{ inMotionDragValue in
                 withAnimation(.smooth) {
-                    if viewModel.isInExploringMode {
+                    if isInExploringMode {
                         viewModel.updateNotePosition(note, to: inMotionDragValue.location, in: geometry, panOffset: .zero, zoom: 1, rotation: .zero)
                     } else {
                         temporaryLinkPath = Path { path in
@@ -516,7 +517,7 @@ extension MainView {
             }
             .onEnded { endingDragValue in
                 withAnimation(.smooth) {
-                    if viewModel.isInExploringMode {
+                    if isInExploringMode {
                         viewModel.updateNotePosition(note, to: endingDragValue.location, in: geometry, panOffset: .zero, zoom: 1, rotation: .zero)
                     } else {
                         viewModel.setDraggedLink(from: note, to: endingDragValue.location, in: geometry, noteSize: Constants.cardSize)

@@ -100,7 +100,8 @@ extension Note {
         self.linkedNotes.remove(at: index)
     }
     
-    func setName(_ name: String, allNotes: [Note]) {
+    /// Sets the name for a note and updates other notes' references to the old name inside their content body to the new name.
+    func setNameAndUpdateAllNotes(_ name: String, allNotes: [Note]) {
         if isNameValid(name, allNotes: allNotes) {
             let oldName = self.formatName
             self.name = name

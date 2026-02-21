@@ -15,7 +15,6 @@ typealias Position = Note.Position
 class MainViewModel {
     // MARK: - Properties
     private(set) var modelContext: ModelContext
-    private(set) var isInExploringMode: Bool = true
     
     // MARK: - Selected models
     var selectedNote: Note?
@@ -95,6 +94,8 @@ class MainViewModel {
         self.modelContext = modelContext
     }
     
+    // MARK: - On receive URL callback
+    /// Receives and treats incoming URL, directing the user to a note view.
     func receiveAndTreatURL(_ url: URL) {
         guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
                 let queryItems = components.queryItems else { return }
@@ -105,9 +106,10 @@ class MainViewModel {
         }
     }
     
-    // MARK: - Mock data
+    // MARK: - Initial data
+    /// Sets the initial data for the models in the app context, if there are no models stored.
     func buildInitialData() {
-        if slipboxes.isEmpty, notes.isEmpty {
+        if slipboxes.isEmpty, notes.isEmpty, tags.isEmpty {
             let slipbox = Slipbox(title: "General")
             modelContext.insert(slipbox)
             let firstNote = Note(slipbox: slipbox, title: "Nota 1")
@@ -123,18 +125,15 @@ class MainViewModel {
             try? modelContext.save()
         }
     }
-
-    // MARK: - Setters
-    func toggleExploringMode() {
-        self.isInExploringMode.toggle()
-    }
     
     // MARK: - Intent methods
+    /// Updates note position in the model context
     func updateNotePosition(_ note: Note, to point: CGPoint, in geometry: GeometryProxy, panOffset: CGOffset, zoom: CGFloat, rotation: Angle) {
         note.updatePosition(to: .converted(from: point, in: geometry, panOffset: panOffset, zoom: zoom, rotation: rotation))
         try? modelContext.save()
     }
     
+    /// Creates a new note in the model context
     private func createNewNote(in slipbox: Slipbox) {
         let title = nameWithoutDuplicates(for: notes)
         let note = Note(slipbox: slipbox, title: title)
@@ -142,6 +141,7 @@ class MainViewModel {
         selectedNote = note
     }
     
+    /// Interface for the view, creates a new note in the selected slipbox or in the first available slipbox.
     func createNewNote() {
         if let slipbox = filterSlipbox {
             createNewNote(in: slipbox)
@@ -152,16 +152,48 @@ class MainViewModel {
         }
     }
     
+    /// Creates and returns a new slipbox.
+    func createAndReturnNewSlipbox() -> Slipbox {
+        let title = nameWithoutDuplicates(for: slipboxes)
+        let slipbox = Slipbox(title: title)
+        createAndSaveToModelContext(slipbox)
+        
+        selectedSlipbox = slipbox
+        
+        return slipbox
+    }
+    
+    /// Primary interface for creating a new slipbox for the view.
+    func createNewSlipbox() {
+        let _ = createAndReturnNewSlipbox()
+    }
+    
+    /// Creates and returns a new tag.
+    func createAndReturnNewTag(name: String) -> Tag {
+        let tag = Tag(name: name)
+        createAndSaveToModelContext(tag)
+        return tag
+    }
+    
+    /// Primary interface for creating a new tag for the view.
+    func createNewTag(name: String) {
+        let _ = createAndReturnNewTag(name: name)
+    }
+    
+    /// Deletes a model from the model context.
     func delete<T: PersistentModel>(_ model: T?) {
         guard let model else { return }
         deleteAndSaveToModelContext(model)
         slipboxToDelete = nil
+        noteToDelete = nil
     }
     
+    /// Sets a link from one note to the other.
     func setLink(from note: Note, to possibleLink: Note) {
         note.addLink(to: possibleLink)
     }
     
+    /// Calculates the distance between a note and the user's drag location and, if it coincides with the location of another note, links them together.
     func setDraggedLink(from note: Note, to location: CGPoint, in geometry: GeometryProxy, noteSize: CGSize) {
         var closestNote: Note? = nil
         var closestDistance: Float? = nil
@@ -177,34 +209,12 @@ class MainViewModel {
         setLink(from: note, to: closestNote)
     }
     
+    /// Remove a link from one note to another.
     func removeLink(from note: Note, to link: Note) {
         note.removeLink(to: link)
     }
     
-    func createAndReturnNewSlipbox() -> Slipbox {
-        let title = nameWithoutDuplicates(for: slipboxes)
-        let slipbox = Slipbox(title: title)
-        createAndSaveToModelContext(slipbox)
-        
-        selectedSlipbox = slipbox
-        
-        return slipbox
-    }
-    
-    func createNewSlipbox() {
-        let _ = createAndReturnNewSlipbox()
-    }
-    
-    func createAndReturnNewTag(name: String) -> Tag {
-        let tag = Tag(name: name)
-        createAndSaveToModelContext(tag)
-        return tag
-    }
-    
-    func createNewTag(name: String) {
-        let _ = createAndReturnNewTag(name: name)
-    }
-    
+    /// Treats the user's tap on a tag in the tag filter list.
     func onFilterTagTapped(_ tag: Tag) {
         if filterTags.contains(tag) {
             filterTags.removeAll(where: { $0 === tag })
@@ -214,10 +224,35 @@ class MainViewModel {
     }
     
     // MARK: - Auxiliary methods
+    /// Helper function that verifies if a note is inside a slipbox or its child-slipboxes.
+    private func isNoteInSlipbox(_ note: Note, slipbox: Slipbox) -> Bool {
+        if note.slipbox === slipbox { return true }
+        
+        for childSlipbox in slipbox.slipboxes {
+            if isNoteInSlipbox(note, slipbox: childSlipbox) {
+                return true
+            }
+        }
+        
+        return false
+    }
+    
+    /// Helper function that verifies whether a note contains any tags available in the model collection.
+    private func doesNoteContainAnyTag(_ note: Note, tags: [Tag]) -> Bool {
+        for noteTag in note.tags {
+            if tags.contains(noteTag) {
+                return true
+            }
+        }
+        return false
+    }
+    
+    /// Returns a boolean value that denotes whether a link could be created between two notes.
     func shouldAllowLink(for note: Note, possibleLink: Note) -> Bool {
         note != possibleLink && !note.linkedNotes.contains(possibleLink)
     }
     
+    /// Helper function for creating a name without duplicates inside the model's collection.
     private func nameWithoutDuplicates<T: Named>(for collection: [T]) -> String {
         var name = "Untitled"
         var number = 0
@@ -231,39 +266,21 @@ class MainViewModel {
         return name
     }
     
+    /// Helper function for creating a model and saving it to the model context.
     private func createAndSaveToModelContext<T: PersistentModel>(_ item: T) {
         modelContext.insert(item)
         try? modelContext.save()
     }
     
+    /// Helper function for deleting a model and saving it to the model context.
     private func deleteAndSaveToModelContext<T: PersistentModel>(_ item: T) {
         modelContext.delete(item)
         try? modelContext.save()
     }
-    
-    private func isNoteInSlipbox(_ note: Note, slipbox: Slipbox) -> Bool {
-        if note.slipbox === slipbox { return true }
-        
-        for childSlipbox in slipbox.slipboxes {
-            if isNoteInSlipbox(note, slipbox: childSlipbox) {
-                return true
-            }
-        }
-        
-        return false
-    }
-    
-    private func doesNoteContainAnyTag(_ note: Note, tags: [Tag]) -> Bool {
-        for noteTag in note.tags {
-            if tags.contains(noteTag) {
-                return true
-            }
-        }
-        return false
-    }
 }
 
 extension Position {
+    /// Converts a CGPoint inside a geometry into a Position value.
     static func converted(from point: CGPoint, in geometry: GeometryProxy, panOffset: CGOffset = .zero, zoom: CGFloat = 1, rotation: Angle = .zero) -> Position {
         let center = geometry.frame(in: .local).center
         let rotatedOffset = panOffset * rotation
@@ -273,6 +290,7 @@ extension Position {
         )
     }
     
+    /// Converts a Position inside a geometry into a CGPoint value.
     func convertToCGPoint(in geometry: GeometryProxy? = nil, panOffset: CGOffset = .zero, zoom: CGFloat = 1, rotation: Angle = .zero) -> CGPoint {
         let center = geometry?.frame(in: .local).center ?? .zero
         let rotatedOffset = panOffset * rotation

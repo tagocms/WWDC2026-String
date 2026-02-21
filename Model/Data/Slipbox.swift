@@ -27,6 +27,7 @@ final class Slipbox: Identifiable, Named {
     private(set) var name: String
     
     // MARK: - Computed properties
+    /// Returns the total note count inside the slipbox and its child-slipboxes.
     var totalNoteCount: Int {
         var noteCount = notes.count
         for slipbox in slipboxes {
@@ -75,6 +76,7 @@ extension Slipbox {
 
 // MARK: - Auxiliary methods
 extension Slipbox {
+    /// Recursive method that verifies if it is possible for a slipbox to have a specific newParentSlipbox.
     func isParentSlipboxValid(_ newParentSlipbox: Slipbox?, originalSlipbox: Slipbox? = nil) -> Bool {
         guard let newParentSlipbox else { return true }
         guard newParentSlipbox !== self else { return false }
