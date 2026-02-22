@@ -232,11 +232,16 @@ extension MainView {
                 exploringModeButton
             }
         }
-        .onChange(of: viewModel.controlModels.filterSlipbox) { _, _ in
+        .onChange(of: viewModel.controlModels.filterSlipbox) {
             zoomToFit(in: geometry)
         }
-        .onChange(of: viewModel.controlModels.filterTags) { _, _ in
+        .onChange(of: viewModel.controlModels.filterTags) {
             zoomToFit(in: geometry)
+        }
+        .onGeometryChange(for: CGRect.self) { geometry in
+            geometry.frame(in: .local)
+        } action: { _ in
+            delayedZoomToFit(in: geometry)
         }
         .gesture(allGestures)
         .onTapGesture(count: 2) {
@@ -244,9 +249,7 @@ extension MainView {
         }
         .gesture(multitouchGesture)
         .task {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                zoomToFit(in: geometry)
-            }
+            delayedZoomToFit(in: geometry)
         }
     }
     
@@ -422,6 +425,12 @@ extension MainView {
         return boundingBox
     }
     
+    private func delayedZoomToFit(in geometry: GeometryProxy) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            zoomToFit(in: geometry)
+        }
+    }
+    
     private func zoomToFit(in geometry: GeometryProxy) {
         let rotationNormalized = rotation.degrees.isNormal ? rotation.degrees : 0
         withAnimation {
@@ -429,7 +438,10 @@ extension MainView {
             rotation = .degrees(Double((Int(rotationNormalized) / 360) * 360))
             
             let bbox = boundingBoxForMap
-            let geometryFrame = geometry.frame(in: .local).insetBy(dx: Constants.cardSize.width, dy: Constants.cardSize.height)
+            let geometryFrame = geometry.frame(in: .local).insetBy(
+                dx: Constants.cardSize.width * 0.5 * geometry.size.width / UIScreen.main.bounds.width,
+                dy: Constants.cardSize.height * 0.5 * geometry.size.height / UIScreen.main.bounds.height
+            )
             
             guard bbox.width > 0,
                   bbox.height > 0,
