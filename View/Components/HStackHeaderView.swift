@@ -8,13 +8,15 @@
 import SwiftUI
 
 struct HStackHeaderView<T: Hashable & Identifiable & Named>: View {
-    // MARK: - Environment and Preferences
-    @Environment(\.isFocused) private var isFocused
+    // MARK: - Preferences
     @AppStorage("colorKey") private var accentColor = Color.accentColor
     
-    // MARK: - Stored properties
+    // MARK: - State properties
     @Binding var collection: [T]
     @Binding var text: String
+    @FocusState private var isFocused
+    
+    // MARK: - Stored properties
     let titleText: String
     let filteredItems: [T]
     let systemImage: String
@@ -57,6 +59,7 @@ struct HStackHeaderView<T: Hashable & Identifiable & Named>: View {
                 .fixedSize(horizontal: true, vertical: false)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
+                .focused($isFocused)
         }
         .padding(.horizontal, standardSpacingAndPadding)
         .padding(.vertical, standardSpacingAndPadding / 2)

@@ -88,6 +88,7 @@ struct NoteView: View {
                     onCreate: viewModel.createNewTagAndAddToSelectedNote,
                     isAllowedToCreate: viewModel.isNewTagNameValid
                 )
+                .focused($focusState, equals: .tags)
             }
             
             Section("Note Content") {
