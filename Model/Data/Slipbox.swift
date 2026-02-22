@@ -62,8 +62,9 @@ extension Slipbox: StandardFetchable {
 // MARK: - Setter methods
 extension Slipbox {
     func setName(_ name: String, allSlipboxes: [Slipbox]) {
-        if isNameValid(name, allSlipboxes: allSlipboxes) {
-            self.name = name
+        let newName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        if isNameForSelfValid(newName, allSlipboxes: allSlipboxes) {
+            self.name = newName
             self.dateLastUpdated = .now
         }
     }
@@ -87,7 +88,7 @@ extension Slipbox {
         return newParentSlipbox.isParentSlipboxValid(newParentSlipbox.parentSlipbox, originalSlipbox: originalSlipbox == nil ? self : originalSlipbox)
     }
     
-    func isNameValid(_ name: String, allSlipboxes: [Slipbox]) -> Bool {
+    func isNameForSelfValid(_ name: String, allSlipboxes: [Slipbox]) -> Bool {
         for slipbox in allSlipboxes {
             if slipbox != self {
                 if slipbox.name == name {
@@ -101,6 +102,10 @@ extension Slipbox {
         }
         
         guard name.count <= 30 else {
+            return false
+        }
+        
+        guard !name.hasPrefix(" ") else {
             return false
         }
         

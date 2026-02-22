@@ -119,28 +119,41 @@ class MainViewModel {
     }
     
     // MARK: - Intent methods
-    /// Updates note position in the model context
+    /// Updates note position in the model context.
     func updateNotePosition(_ note: Note, to point: CGPoint, in geometry: GeometryProxy, panOffset: CGOffset, zoom: CGFloat, rotation: Angle) {
         note.updatePosition(to: .converted(from: point, in: geometry, panOffset: panOffset, zoom: zoom, rotation: rotation))
         try? modelContext.save()
     }
     
-    /// Creates a new note in the model context
-    private func createNewNote(in slipbox: Slipbox) {
-        let title = nameWithoutDuplicates(for: notes)
+    /// Creates a new note in the model context and returns it.
+    private func createAndReturnNewNote(with name: String? = nil, in slipbox: Slipbox, shouldAutoOpen: Bool = true) -> Note {
+        let title: String
+        if let name, Note.isNewNameValid(name, allNotes: notes) {
+            title = name
+        } else {
+            title = nameWithoutDuplicates(for: notes)
+        }
         let note = Note(slipbox: slipbox, title: title)
         createAndSaveToModelContext(note)
-        controlModels.noteToOpen = note
+        if shouldAutoOpen {
+            controlModels.noteToOpen = note
+        }
+        return note
     }
     
     /// Interface for the view, creates a new note in the selected slipbox or in the first available slipbox.
-    func createNewNote() {
+    func createNewNote(with name: String? = nil, shouldAutoOpen: Bool = true) {
+        let _ = createAndReturnNewNote(with: name, shouldAutoOpen: shouldAutoOpen)
+    }
+    
+    /// Interface for the view, creates a new note in the selected slipbox or in the first available slipbox and returns it.
+    func createAndReturnNewNote(with name: String?, shouldAutoOpen: Bool = true) -> Note {
         if let slipbox = controlModels.filterSlipbox {
-            createNewNote(in: slipbox)
+            return createAndReturnNewNote(with: name, in: slipbox, shouldAutoOpen: shouldAutoOpen)
         } else if let slipbox = slipboxes.first {
-            createNewNote(in: slipbox)
+            return createAndReturnNewNote(with: name, in: slipbox, shouldAutoOpen: shouldAutoOpen)
         } else {
-            createNewNote(in: createAndReturnNewSlipbox())
+            return createAndReturnNewNote(with: name, in: createAndReturnNewSlipbox(), shouldAutoOpen: shouldAutoOpen)
         }
     }
     

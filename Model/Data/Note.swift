@@ -102,9 +102,10 @@ extension Note {
     
     /// Sets the name for a note and updates other notes' references to the old name inside their content body to the new name.
     func setNameAndUpdateAllNotes(_ name: String, allNotes: [Note]) {
-        if isNameValid(name, allNotes: allNotes) {
+        let newName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        if isNameForSelfValid(newName, allNotes: allNotes) {
             let oldName = self.formatName
-            self.name = name
+            self.name = newName
             
             var container = AttributeContainer()
             container.linkedNote = self.id
@@ -143,7 +144,7 @@ extension Note {
 
 // MARK: - Auxiliary methods
 extension Note {
-    func isNameValid(_ name: String, allNotes: [Note]) -> Bool {
+    func isNameForSelfValid(_ name: String, allNotes: [Note]) -> Bool {
         for note in allNotes {
             if note != self {
                 if note.name == name {
@@ -152,11 +153,29 @@ extension Note {
             }
         }
         
+        return Self.doesNameMeetMinimumRequirements(name)
+    }
+    
+    static func isNewNameValid(_ name: String, allNotes: [Note]) -> Bool {
+        for note in allNotes {
+            if note.name == name {
+                return false
+            }
+        }
+        
+        return Self.doesNameMeetMinimumRequirements(name)
+    }
+    
+    static func doesNameMeetMinimumRequirements(_ name: String) -> Bool {
         guard !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             return false
         }
         
         guard name.count <= 80 else {
+            return false
+        }
+        
+        guard !name.hasPrefix(" ") else {
             return false
         }
         

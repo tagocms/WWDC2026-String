@@ -22,19 +22,25 @@ final class NoteViewModel: MainViewModel {
         set { note.setParentSlipbox(newValue) }
     }
     var selectedNoteTags: [Tag] {
-        get { note.tags }
+        get { note.tags.sorted() }
         set { note.setTags(newValue) }
     }
     var selectedNoteLinkedNotes: [Note] {
-        get { note.linkedNotes }
+        get { note.linkedNotes.sorted() }
         set { note.setLinkedNotes(newValue) }
     }
     var selectedNoteContentBody: AttributedString {
         get { note.contentBody }
         set { note.setContent(newValue) }
     }
+    
     var newTagName: String = ""
     var filteredTags: [Tag] { Note.filtered(tags, by: newTagName) }
+    
+    var newLinkedNoteName: String = ""
+    var filteredLinkedNotes: [Note] {
+        Note.filtered(notes, by: newLinkedNoteName).filter { $0 !== note }
+    }
     
     // MARK: - Initializer
     init(_ modelContext: ModelContext, note: Note) {
@@ -57,6 +63,12 @@ final class NoteViewModel: MainViewModel {
         newTagName = ""
     }
     
+    /// Creates and adds a new note to the selected note's linked notes.
+    func createAndAddNoteToLinkedNotes() {
+        selectedNoteLinkedNotes.append(createAndReturnNewNote(with: newLinkedNoteName, shouldAutoOpen: false))
+        newLinkedNoteName = ""
+    }
+    
     /// Adds the tag to the selected note.
     func addTagToNote(_ tag: Tag) {
         selectedNoteTags.append(tag)
@@ -66,5 +78,10 @@ final class NoteViewModel: MainViewModel {
     /// Checks if the newTagName is valid.
     func isNewTagNameValid() -> Bool {
         Tag.isNameValid(newTagName, allTags: tags)
+    }
+    
+    /// Checks if the newLinkedNoteName is valid.
+    func isNewLinkedNoteNameValid() -> Bool {
+        Note.isNewNameValid(newLinkedNoteName, allNotes: notes)
     }
 }

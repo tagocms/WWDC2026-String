@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct HStackHeaderView<T: Hashable & Identifiable & Named>: View {
+struct HStackHeaderView<T: Hashable & Identifiable & Named & Comparable>: View {
     // MARK: - Preferences
     @AppStorage("colorKey") private var accentColor = Color.accentColor
     
@@ -21,22 +21,30 @@ struct HStackHeaderView<T: Hashable & Identifiable & Named>: View {
     let filteredItems: [T]
     let systemImage: String
     let deleteSystemImage: String
+    let isTag: Bool
+    let onPrimaryAction: ((T) -> Void)?
     let onCreate: () -> Void
     let isAllowedToCreate: () -> Bool
     
     // MARK: - Constants
     let standardSpacingAndPadding: CGFloat = 8
     
-    
     var body: some View {
         HStack(spacing: standardSpacingAndPadding * 2) {
             Text("\(titleText.capitalized)s")
                 .font(.title3.bold())
-            HStack(spacing: standardSpacingAndPadding) {
-                ForEach(collection) { item in
-                    buildButton(for: item)
+            ScrollView(.horizontal) {
+                HStack(spacing: standardSpacingAndPadding) {
+                    ForEach(collection) { item in
+                        buildButton(for: item)
+                    }
                 }
             }
+            .containerRelativeFrame(.horizontal) { value, axis in
+                value * 0.4
+            }
+            .scrollIndicators(.hidden)
+            .scrollBounceBehavior(.basedOnSize)
             
             ZStack(alignment: .searchBarBottom) {
                 searchBar
@@ -51,6 +59,32 @@ struct HStackHeaderView<T: Hashable & Identifiable & Named>: View {
         .buttonStyle(.plain)
     }
     
+    // MARK: - Initializer
+    init(
+        collection: Binding<[T]>,
+        text: Binding<String>,
+        titleText: String,
+        filteredItems: [T],
+        systemImage: String,
+        deleteSystemImage: String,
+        isTag: Bool = true,
+        onPrimaryAction: ((T) -> Void)? = nil,
+        onCreate: @escaping () -> Void,
+        isAllowedToCreate: @escaping () -> Bool
+    ) {
+        self._collection = collection
+        self._text = text
+        self.titleText = titleText
+        self.filteredItems = filteredItems
+        self.systemImage = systemImage
+        self.deleteSystemImage = deleteSystemImage
+        self.isTag = isTag
+        self.onPrimaryAction = onPrimaryAction
+        self.onCreate = onCreate
+        self.isAllowedToCreate = isAllowedToCreate
+    }
+    
+    // MARK: - View components
     private var searchBar: some View {
         HStack(spacing: standardSpacingAndPadding) {
             Image(systemName: "plus")
@@ -103,17 +137,29 @@ struct HStackHeaderView<T: Hashable & Identifiable & Named>: View {
     @ViewBuilder
     private func buildButton(for item: T) -> some View {
         Menu {
+            if !isTag {
+                Button("Go to '\(item.name)'", systemImage: systemImage) {
+                    onPrimaryAction?(item)
+                }
+            }
             Button("Remove '\(item.name)' from note", systemImage: deleteSystemImage, role: .destructive) {
                 withAnimation {
                     collection.removeAll { $0.id == item.id }
                 }
             }
         } label: {
-            Text(item.name)
-                .padding(.horizontal, standardSpacingAndPadding)
-                .padding(.vertical, standardSpacingAndPadding / 2)
-                .background(accentColor.opacity(0.2))
-                .clipShape(.capsule)
+            if isTag {
+                Text(item.name)
+                    .padding(.horizontal, standardSpacingAndPadding)
+                    .padding(.vertical, standardSpacingAndPadding / 2)
+                    .background(accentColor.opacity(0.2))
+                    .clipShape(.capsule)
+            } else {
+                Text(item.name)
+                    .padding(.horizontal, standardSpacingAndPadding)
+                    .padding(.vertical, standardSpacingAndPadding / 2)
+                    .foregroundStyle(accentColor)
+            }
         }
     }
 }

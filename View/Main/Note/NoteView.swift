@@ -15,6 +15,7 @@ struct NoteView: View {
     // MARK: - Environment
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
+    @Environment(MainViewModel.self) private var mainViewModel
     
     // MARK: - Accent color
     @AppStorage("colorKey") private var accentColor: Color = Color.accentColor
@@ -32,7 +33,7 @@ struct NoteView: View {
         Group {
             if let viewModel {
                 let bindableViewModel = Bindable(viewModel)
-                buildForm(with: bindableViewModel)
+                buildForm(bindableViewModel)
                 .onAppear {
                     applyChangesToAttributedText()
                 }
@@ -61,7 +62,7 @@ struct NoteView: View {
     }
     
     // MARK: - View components
-    private func buildForm(with bindableViewModel: Bindable<NoteViewModel>) -> some View {
+    private func buildForm(_ bindableViewModel: Bindable<NoteViewModel>) -> some View {
         Form {
             Section("Header") {
                 TextField("Name", text: bindableViewModel.selectedNoteName)
@@ -78,17 +79,7 @@ struct NoteView: View {
                 }
                 .font(.title3.bold())
                 
-                HStackHeaderView(
-                    collection: bindableViewModel.selectedNoteTags,
-                    text: bindableViewModel.newTagName,
-                    titleText: "tag",
-                    filteredItems: viewModel.filteredTags,
-                    systemImage: "tag",
-                    deleteSystemImage: "tag.slash",
-                    onCreate: viewModel.createNewTagAndAddToSelectedNote,
-                    isAllowedToCreate: viewModel.isNewTagNameValid
-                )
-                .focused($focusState, equals: .tags)
+                buildTagsAndLinkedNotesHeaders(bindableViewModel)
             }
             
             Section("Note Content") {
@@ -106,6 +97,38 @@ struct NoteView: View {
                 }
             }
         }
+    }
+    
+    @ViewBuilder
+    private func buildTagsAndLinkedNotesHeaders(_ bindableViewModel: Bindable<NoteViewModel>) -> some View {
+        HStackHeaderView(
+            collection: bindableViewModel.selectedNoteTags,
+            text: bindableViewModel.newTagName,
+            titleText: "tag",
+            filteredItems: viewModel.filteredTags,
+            systemImage: "tag",
+            deleteSystemImage: "tag.slash",
+            onCreate: viewModel.createNewTagAndAddToSelectedNote,
+            isAllowedToCreate: viewModel.isNewTagNameValid
+        )
+        .focused($focusState, equals: .tags)
+        
+        HStackHeaderView(
+            collection: bindableViewModel.selectedNoteLinkedNotes,
+            text: bindableViewModel.newLinkedNoteName,
+            titleText: "linked note",
+            filteredItems: viewModel.filteredLinkedNotes,
+            systemImage: "document.on.document",
+            deleteSystemImage: "document.on.trash",
+            isTag: false
+        ) { noteToOpen in
+            mainViewModel.controlModels.noteToOpen = noteToOpen
+        } onCreate: {
+            viewModel.createAndAddNoteToLinkedNotes()
+        } isAllowedToCreate: {
+            viewModel.isNewLinkedNoteNameValid()
+        }
+        .focused($focusState, equals: .linkedNotes)
     }
     
     // MARK: - Initializer

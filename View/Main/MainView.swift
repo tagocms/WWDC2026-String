@@ -97,6 +97,7 @@ extension MainView {
                     NoteView(note)
                         .presentationSizing(.page)
                         .navigationTransition(.zoom(sourceID: note.id, in: noteNamespace))
+                        .environment(viewModel)
                 }
                 .sheet(item: bindableViewModel.controlModels.slipboxToOpen) { slipbox in
                     SlipboxView(slipbox)
