@@ -111,28 +111,33 @@ extension Note {
             Note.alterTextInContentBodyForAllNotes(self, oldFormattedName: oldName, allNotes: allNotes, attributes: container) { noteToCheck, alteredItem in
                 noteToCheck.linkedNotes.contains(alteredItem)
             }
-
+            
+            self.dateLastUpdated = .now
         }
     }
     
     func setParentSlipbox(_ slipbox: Slipbox) {
         self.slipbox = slipbox
+        self.dateLastUpdated = .now
     }
     
     func setTags(_ tags: [Tag]) {
         var tagSet: Set<Tag> = []
         tagSet.formUnion(tags)
         self.tags = tagSet.map { $0 }
+        self.dateLastUpdated = .now
     }
     
     func setLinkedNotes(_ linkedNotes: [Note]) {
         var noteSet: Set<Note> = []
         noteSet.formUnion(linkedNotes)
         self.linkedNotes = noteSet.map { $0 }
+        self.dateLastUpdated = .now
     }
     
     func setContent(_ contentBody: AttributedString) {
         self.contentBody = contentBody
+        self.dateLastUpdated = .now
     }
 }
 
