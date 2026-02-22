@@ -102,18 +102,161 @@ class MainViewModel {
     /// Sets the initial data for the models in the app context, if there are no models stored.
     func buildInitialData() {
         if slipboxes.isEmpty, notes.isEmpty, tags.isEmpty {
-            let slipbox = Slipbox(title: "General")
-            modelContext.insert(slipbox)
-            let firstNote = Note(slipbox: slipbox, title: "Nota 1")
-            let secondNote = Note(linkedNotes: [firstNote], slipbox: slipbox, title: "Nota 2")
-            let thirdNote = Note(linkedNotes: [firstNote, secondNote], slipbox: slipbox, title: "Nota 3")
-            let fourthNote = Note(slipbox: slipbox, title: "Nota 4")
-            let fifthNote = Note(linkedNotes: [fourthNote, thirdNote], slipbox: slipbox, title: "Nota 5")
-            modelContext.insert(firstNote)
-            modelContext.insert(secondNote)
-            modelContext.insert(thirdNote)
-            modelContext.insert(fourthNote)
-            modelContext.insert(fifthNote)
+            let welcomeSlipbox = Slipbox(title: "00 - Welcome")
+            let fleetingSlipbox = Slipbox(title: "01 - Fleeting")
+            let referenceSlipbox = Slipbox(title: "02 - Reference")
+            let permanentSlipbox = Slipbox(title: "03 - Permanent")
+            modelContext.insert(welcomeSlipbox)
+            modelContext.insert(fleetingSlipbox)
+            modelContext.insert(referenceSlipbox)
+            modelContext.insert(permanentSlipbox)
+            
+            let tutorialTag = Tag(name: "tutorial")
+            let zettelkastenTag = Tag(name: "zettelkasten")
+            let personTag = Tag(name: "person")
+            let ideaTag = Tag(name: "idea")
+            let astrologyTag = Tag(name: "astrology")
+            
+            let welcomeNote = Note(
+                tags: [tutorialTag],
+                slipbox: welcomeSlipbox,
+                title: "Welcome! Start here",
+                contentBody: AttributedString(
+                """
+                Hello, welcome to ????, a note-taking app designed to make studies easier by helping to link connected information, categorize them by tags and/or folders (named slipboxes here!) and customize their content with rich text-editing capabilities, such as custom fonts, bold text and so much more!
+                
+                To get started, tap here: /Next Note/
+                """
+                )
+            )
+            
+            let nextNote = Note(
+                tags: [tutorialTag],
+                slipbox: welcomeSlipbox,
+                title: "Next Note",
+                contentBody: AttributedString(
+                    """
+                    What you've just tapped on is a link between two notes. 
+                    You can create links by typing an existing note name between slashes ('/NoteName/'), such as /Next Note/ or /Welcome! Start here/. Use links to connect related information and build your own inter-connected knowledgebase about any topic that interests you.
+                    You can also create tags using similar syntax, but instead of slashes, you use only one hashtag at the beggining of the tag's name (#tag_name). Use tags to filter and categorize content more easily.
+                    
+                    Before your next step, experiment with these fundamentals: complete the link and tag below - for 'Final Tutorial Note' and 'tutorial', respectively.
+                    /Final Tutorial N
+                    #tutor
+                    """
+                ),
+                position: Position(x: 200, y: 0),
+            )
+            
+            let finalTutorialNote = Note(
+                tags: [],
+                slipbox: welcomeSlipbox,
+                title: "Final Tutorial Note",
+                contentBody: AttributedString(
+                    """
+                    Before you begin, it's important to know that you can also create and customize new slipboxes and notes from both inside the note (in the header section) and in the map view. 
+                    The map view is the hub for all your notes, and you can configure, customize and organize its positioning as you like. 
+                    Speaking of organization, ???? is built primarily for usage alongside the /Zettelkasten Method/, in order to extract the most out of the knowledge you acquire and persist that knowledge for the longest possible time.
+                    If you want to know more about this method, tap here: /Zettelkasten Method/
+                    """
+                ),
+                position: Position(x: 400, y: -250),
+            )
+            
+            let zettelkastenTutorialNote = Note(
+                tags: [zettelkastenTag],
+                slipbox: permanentSlipbox,
+                title: "Zettelkasten Method",
+                contentBody: AttributedString(
+                    """
+                    The Zettelkasten Method is a note-taking and knowledge management method popularized by german sociologist /Niklas Luhmann/. It consists of creating atomic notes, which are singular pieces of knowledge extracted from reliable sources, and linking them together in order to build a greater understanding over the studied subjects and expanding the user's learnings - while also creating a larger personal knowledgebase and reference material.
+                    
+                    The method consists of a list of principles and advocates for the existence of the following kinds of notes:
+                    1. Fleeting notes - Fleeting ideas, made to be quickly remembered and discarded.
+                    2. Literature notes - Summaries of books, courses, classes, videos etc., written using the one's own words.
+                    3. Permanent notes - Atomic notes that consist of a single idea or concept, derived from the previous two types of notes. They should also be written using one's own words.
+                    4. Project notes - Notes that may or may not be temporary, but which are linked to projects the user is undertaking or tasks that need to be remembered.
+                    
+                    ????? can be used for all kinds of notes, but the examples we built are only of the first 3 types. 
+                    To see these notes in action, tap one of the following links:
+                    1. /Fleeting Note Example/
+                    2. /Literature Note Example/
+                    3. /Permanent Note Example/
+                    """
+                ),
+                position: Position(x: 400, y: -500),
+            )
+            let luhmannNote = Note(
+                tags: [personTag],
+                slipbox: permanentSlipbox,
+                title: "Niklas Luhmann",
+                contentBody: AttributedString(
+                    """
+                    Niklas Luhmann was a german sociologist and creator of the /Zettelkasten Method/. He is one of the most prolific authors of all time, publishing over 14.000 pages over the course of his career.
+                    """
+                ),
+                position: Position(x: 400, y: -750),
+            )
+            
+            let fleetingNote = Note(
+                tags: [ideaTag, astrologyTag],
+                slipbox: permanentSlipbox,
+                title: "Fleeting Note Example",
+                contentBody: AttributedString(
+                    """
+                    I think the sky is blue because of the reflection of the sun's rays over the surface of the ocean. I wonder if that's true.
+                    """
+                ),
+                position: Position(x: 600, y: -750),
+            )
+            
+            let literatureNote = Note(
+                tags: [astrologyTag],
+                linkedNotes: [fleetingNote],
+                slipbox: permanentSlipbox,
+                title: "Literature Note Example",
+                contentBody: AttributedString(
+                    """
+                    According to Nasa, the sky is blue because sunlight reaches Earth's atmosphere and is scattered in all directions by all the gases and particles in the air. Blue light is scattered more than the other colors because it travels as shorter, smaller waves. This is why we see a blue sky most of the time.
+                    Source: https://spaceplace.nasa.gov/blue-sky/en/
+                    """
+                ),
+                position: Position(x: 800, y: -750),
+            )
+            
+            let permanentNote = Note(
+                tags: [astrologyTag],
+                linkedNotes: [literatureNote],
+                slipbox: permanentSlipbox,
+                title: "Permanent Note Example",
+                contentBody: AttributedString(
+                    """
+                    The sky is blue because sunlight reaches Earth's atmosphere and blue light is scattered more than the other colors - due to its shorter waves - creating the effect that the sky is blue.
+                    """
+                ),
+                position: Position(x: 1000, y: -750),
+            )
+            
+            welcomeNote.setLinkedNotes([nextNote])
+            finalTutorialNote.setLinkedNotes([zettelkastenTutorialNote])
+            zettelkastenTutorialNote.setLinkedNotes([luhmannNote, fleetingNote, literatureNote, permanentNote])
+            
+            let notesToInsert: [Note] = [
+                welcomeNote,
+                nextNote,
+                finalTutorialNote,
+                zettelkastenTutorialNote,
+                luhmannNote,
+                fleetingNote,
+                literatureNote,
+                permanentNote
+                
+            ]
+            
+            for noteToInsert in notesToInsert {
+                modelContext.insert(noteToInsert)
+            }
+            
             try? modelContext.save()
         }
     }

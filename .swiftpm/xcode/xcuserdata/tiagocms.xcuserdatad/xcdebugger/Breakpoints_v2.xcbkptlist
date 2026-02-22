@@ -30,8 +30,8 @@
             filePath = "View/Main/MainViewModel.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "208"
-            endingLineNumber = "208"
+            startingLineNumber = "351"
+            endingLineNumber = "351"
             landmarkName = "setDraggedLink(from:to:in:noteSize:)"
             landmarkType = "7">
          </BreakpointContent>
