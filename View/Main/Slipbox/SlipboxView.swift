@@ -9,7 +9,7 @@ import SwiftData
 import SwiftUI
 
 struct SlipboxView: View {
-    // MARK: - Dismiss
+    // MARK: - Environment
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     
@@ -23,8 +23,16 @@ struct SlipboxView: View {
     // MARK: - View
     var body: some View {
         Group {
-            if let bindableViewModel = Binding($viewModel) {
-                buildForm(bindableViewModel)
+            if let viewModel {
+                let bindableViewModel = Bindable(viewModel)
+                buildForm(with: bindableViewModel)
+                    .alert(viewModel.alertTitle, isPresented: $isAlertPresented) {
+                        viewModel.buildAlertActions {
+                            dismiss()
+                        }
+                    } message: {
+                        Text(viewModel.alertMessage)
+                    }
             } else {
                 ProgressView().font(.largeTitle)
             }
@@ -34,35 +42,21 @@ struct SlipboxView: View {
                 viewModel = SlipboxViewModel(modelContext, slipbox: slipbox)
             }
         }
-        .alert(viewModel.alertTitle, isPresented: $isAlertPresented) {
-            viewModel.buildAlertActions {
-                dismiss()
-            }
-        } message: {
-            Text(viewModel.alertMessage)
-        }
-        .onChange(of: viewModel.name) { oldValue, newValue in
-            if slipbox.isNameValid(newValue, allSlipboxes: viewModel.slipboxes) {
-                viewModel.name = newValue
-            } else {
-                viewModel.name = oldValue
-            }
-        }
     }
     
     // MARK: - Initializer
     init(_ slipbox: Slipbox) {
-        self.slipbox = slipbox
+        self._slipbox = Bindable(slipbox)
     }
     
     // MARK: - Builder methods
-    private func buildForm(_ bindableViewModel: Binding<SlipboxViewModel>) -> some View {
+    private func buildForm(with bindableViewModel: Bindable<SlipboxViewModel>) -> some View {
         Form {
             Section("Slipbox") {
-                TextField("Name", text: bindableViewModel.name)
+                TextField("Name", text: bindableViewModel.selectedSlipboxName)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
-                Picker("Parent Slipbox", selection: bindableViewModel.parentSlipbox) {
+                Picker("Parent Slipbox", selection: bindableViewModel.selectedSlipboxParentSlipbox) {
                     Text("Root")
                         .tag(nil as Slipbox?)
                     ForEach(viewModel.slipboxes.sorted()) { possibleParent in
@@ -75,7 +69,7 @@ struct SlipboxView: View {
             }
             
             Button("Delete slipbox", role: .destructive) {
-                viewModel.slipboxToDelete = slipbox
+                viewModel.controlModels.slipboxToDelete = slipbox
                 isAlertPresented = true
             }
         }

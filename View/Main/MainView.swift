@@ -5,6 +5,8 @@ struct MainView: View {
     // MARK: - Data
     @Environment(\.modelContext) private var modelContext
     @State private var viewModel: MainViewModel!
+    @Query(Note.fetchDescriptor) private var notesFromQuery: [Note]
+    @Query(Slipbox.fetchDescriptor) private var slipboxesFromQuery: [Slipbox]
     
     // MARK: - Theme and accent color
     @AppStorage("theme") private var theme: Theme = .system
@@ -74,6 +76,7 @@ struct MainView: View {
             }
         }
         .onOpenURL { url in
+            guard let viewModel else { return }
             viewModel.receiveAndTreatURL(url)
         }
         .preferredColorScheme(theme.colorScheme)
@@ -84,38 +87,42 @@ struct MainView: View {
 // MARK: - View Body components
 extension MainView {
     private var fullViewBody: some View {
-        if let bindingToViewModel = Binding($viewModel) {
-            GeometryReader { geometry in
-                buildContentBodyWithModifiers(in: geometry)
-            }
-            .sheet(item: bindingToViewModel.selectedNote) { note in
-                NoteView(note)
-                    .presentationSizing(.page)
-                    .navigationTransition(.zoom(sourceID: note.id, in: noteNamespace))
-            }
-            .sheet(item: bindingToViewModel.selectedSlipbox) { slipbox in
-                SlipboxView(slipbox)
-                    .navigationTransition(.zoom(sourceID: slipbox.id, in: slipboxNamespace))
-            }
-            .sheet(isPresented: $isShowingSettings) {
-                SettingsView()
-                    .navigationTransition(.zoom(sourceID: "settings", in: defaultNamespace))
-            }
-            .alert(viewModel.alertTitle, isPresented: $isAlertPresented) {
-                viewModel.buildAlertActions()
-            } message: {
-                Text(viewModel.alertMessage)
-            }
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("Settings", systemImage: "gear") {
-                        isShowingSettings.toggle()
-                    }
-                    .matchedTransitionSource(id: "settings", in: defaultNamespace)
+        Group {
+            if let viewModel {
+                let bindableViewModel = Bindable(viewModel)
+                GeometryReader { geometry in
+                    buildContentBodyWithModifiers(in: geometry)
                 }
+                .sheet(item: bindableViewModel.controlModels.noteToOpen) { note in
+                    NoteView(note)
+                        .presentationSizing(.page)
+                        .navigationTransition(.zoom(sourceID: note.id, in: noteNamespace))
+                }
+                .sheet(item: bindableViewModel.controlModels.slipboxToOpen) { slipbox in
+                    SlipboxView(slipbox)
+                        .navigationTransition(.zoom(sourceID: slipbox.id, in: slipboxNamespace))
+                }
+                .sheet(isPresented: $isShowingSettings) {
+                    SettingsView()
+                        .navigationTransition(.zoom(sourceID: "settings", in: defaultNamespace))
+                }
+                .alert(viewModel.alertTitle, isPresented: $isAlertPresented) {
+                    viewModel.buildAlertActions()
+                } message: {
+                    Text(viewModel.alertMessage)
+                }
+                
+            } else {
+                ProgressView().font(.largeTitle)
             }
-        } else {
-            ProgressView().font(.largeTitle)
+        }
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button("Settings", systemImage: "gear") {
+                    isShowingSettings.toggle()
+                }
+                .matchedTransitionSource(id: "settings", in: defaultNamespace)
+            }
         }
     }
     
@@ -156,9 +163,9 @@ extension MainView {
         ScrollView(.horizontal) {
             HStack(alignment: .dockBarLastTextBaseline, spacing: Constants.dockBarSpacing) {
                 Button {
-                    viewModel.filterSlipbox = nil
+                    viewModel.controlModels.filterSlipbox = nil
                 } label: {
-                    IconAndTextView(iconName: "folder", text: "All", isSelected: viewModel.filterSlipbox == nil)
+                    IconAndTextView(iconName: "folder", text: "All", isSelected: viewModel.controlModels.filterSlipbox == nil)
                 }
                 .alignmentGuide(.dockBarLastTextBaseline) { dimension in
                     dimension[.top]
@@ -200,12 +207,12 @@ extension MainView {
     
     private var filterMenuButton: some View {
         Menu {
-            Button("Clear filter", systemImage: "clear", role: .cancel) { viewModel.filterTags.removeAll() }
+            Button("Clear filter", systemImage: "clear", role: .cancel) { viewModel.controlModels.filterTags.removeAll() }
             Menu("Tags", systemImage: "tag") {
                 ForEach(viewModel.tags) { tag in
                     Button(
                         tag.name,
-                        systemImage: viewModel.filterTags.contains(tag) ? "checkmark.circle" : "circle"
+                        systemImage: viewModel.controlModels.filterTags.contains(tag) ? "checkmark.circle" : "circle"
                     ) {
                         viewModel.onFilterTagTapped(tag)
                     }
@@ -225,10 +232,10 @@ extension MainView {
                 exploringModeButton
             }
         }
-        .onChange(of: viewModel.filterSlipbox) { _, _ in
+        .onChange(of: viewModel.controlModels.filterSlipbox) { _, _ in
             zoomToFit(in: geometry)
         }
-        .onChange(of: viewModel.filterTags) { _, _ in
+        .onChange(of: viewModel.controlModels.filterTags) { _, _ in
             zoomToFit(in: geometry)
         }
         .gesture(allGestures)
@@ -256,7 +263,7 @@ extension MainView {
             
             dockBar
             
-            if viewModel.filteredNotes.isEmpty {
+            if viewModel.filteredNotes(notesFromQuery).isEmpty {
                 Button {
                     viewModel.createNewNote()
                 } label: {
@@ -274,7 +281,7 @@ extension MainView {
             temporaryLinkPath
                 .stroke(accentColor)
         }
-        ForEach(viewModel.filteredNotes) { note in
+        ForEach(viewModel.filteredNotes(notesFromQuery)) { note in
             ForEach(note.linkedNotes) { linkedNote in
                 buildNotePath(from: note, to: linkedNote, in: geometry)
             }
@@ -285,7 +292,7 @@ extension MainView {
     
     @ViewBuilder
     private func buildNotePath(from note: Note, to linkedNote: Note, in geometry: GeometryProxy) -> some View {
-        if viewModel.filteredNotes.contains(linkedNote) {
+        if viewModel.filteredNotes(notesFromQuery).contains(linkedNote) {
             Path { path in
                 path.move(to: note.position.convertToCGPoint(in: geometry))
                 path.addLine(to: linkedNote.position.convertToCGPoint(in: geometry))
@@ -298,7 +305,7 @@ extension MainView {
     private func buildNoteCardTags(_ note: Note, in geometry: GeometryProxy) -> some View {
         HStack(alignment: .center) {
             Image(systemName: "tag")
-                .frame(width: geometry.size.width * 0.2)
+            Spacer()
             LazyVGrid(
                 columns: [
                     GridItem(
@@ -312,7 +319,7 @@ extension MainView {
                     Text("\(tag.name)")
                         .font(.caption)
                         .lineLimit(1)
-                        .padding(.vertical, Constants.standardPadding)
+                        .padding(.vertical, Constants.standardPadding / 2)
                 }
             }
         }
@@ -339,7 +346,7 @@ extension MainView {
             }
         } else {
             Button("Delete note", systemImage: "trash", role: .destructive) {
-                viewModel.noteToDelete = note
+                viewModel.controlModels.noteToDelete = note
                 isAlertPresented = true
             }
         }
@@ -370,7 +377,7 @@ extension MainView {
             }
             .position(note.position.convertToCGPoint(in: geometry))
             .onTapGesture {
-                viewModel.selectedNote = note
+                viewModel.controlModels.noteToOpen = note
             }
             .gesture(noteDragGesture(for: note, in: geometry))
             .zIndex(Constants.cardZIndex)
@@ -379,22 +386,18 @@ extension MainView {
     @ViewBuilder
     private func buildSlipboxButton(_ slipbox: Slipbox) -> some View {
         Button {
-            viewModel.filterSlipbox = slipbox
+            viewModel.controlModels.filterSlipbox = slipbox
         } label: {
-            IconAndTextView(iconName: "folder", text: slipbox.name, isSelected: viewModel.filterSlipbox === slipbox)
+            IconAndTextView(iconName: "folder", text: slipbox.name, isSelected: viewModel.controlModels.filterSlipbox === slipbox)
         }
         .contextMenu {
-            Button {
-                viewModel.selectedSlipbox = slipbox
-            } label: {
-                Label("Edit \(slipbox.name)", systemImage: "pencil")
+            Button("Edit \(slipbox.name)", systemImage: "pencil") {
+                viewModel.controlModels.slipboxToOpen = slipbox
             }
             
-            Button(role: .destructive) {
-                viewModel.slipboxToDelete = slipbox
+            Button("Delete \(slipbox.name)", systemImage: "trash", role: .destructive) {
+                viewModel.controlModels.slipboxToDelete = slipbox
                 isAlertPresented = true
-            } label: {
-                Label("Delete \(slipbox.name)", systemImage: "trash")
             }
         }
         .matchedTransitionSource(id: slipbox.id, in: slipboxNamespace)
@@ -413,7 +416,7 @@ extension MainView {
     
     private var boundingBoxForMap: CGRect {
         var boundingBox = CGRect.zero
-        for note in viewModel.filteredNotes {
+        for note in viewModel.filteredNotes(notesFromQuery) {
             boundingBox = boundingBox.union(self.boundingBox(for: note))
         }
         return boundingBox

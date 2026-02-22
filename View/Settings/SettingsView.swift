@@ -12,7 +12,6 @@ struct SettingsView: View {
     static let userDefaultsColorKey = "colorKey"
     
     // MARK: - UI settings
-//    @Environment(\.colorScheme)
     @AppStorage("theme") private var theme: Theme = .system
     @AppStorage("isShowingUIControls") private var isShowingUIControls: Bool = true
     @AppStorage("automaticTagRemoval") private var automaticTagRemoval: Bool = false

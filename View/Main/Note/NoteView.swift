@@ -12,29 +12,16 @@ struct NoteView: View {
     enum NoteViewFocusState {
         case name, tags, linkedNotes, contentBody
     }
-    // MARK: - Dismiss
+    // MARK: - Environment
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
     
     // MARK: - Accent color
     @AppStorage("colorKey") private var accentColor: Color = Color.accentColor
     
     // MARK: - Data
     @Bindable var note: Note
-    @Bindable private var viewModel: MainViewModel
-    
-    // MARK: - Data UI State
-    @State private var name: String
-    @State private var parentSlipbox: Slipbox
-    @State private var tags: [Tag]
-    @State private var newTagName: String = ""
-    @State private var linkedNotes: [Note]
-    @State private var contentBody: AttributedString
-    
-    // MARK: - Auxiliary
-    private var filteredTags: [Tag] {
-        Note.filtered(viewModel.tags, by: newTagName)
-    }
-    
+    @State private var viewModel: NoteViewModel!
     
     // MARK: - UI State
     @State private var isAlertPresented: Bool = false
@@ -42,15 +29,48 @@ struct NoteView: View {
     
     // MARK: - View
     var body: some View {
+        Group {
+            if let viewModel {
+                let bindableViewModel = Bindable(viewModel)
+                buildForm(with: bindableViewModel)
+                .onAppear {
+                    applyChangesToAttributedText()
+                }
+                .onChange(of: viewModel.selectedNoteContentBody) {
+                    applyChangesToAttributedText()
+                }
+                .onChange(of: viewModel.selectedNoteName) {
+                    applyChangesToAttributedText()
+                }
+                .alert(viewModel.alertTitle, isPresented: $isAlertPresented) {
+                    viewModel.buildAlertActions {
+                        dismiss()
+                    }
+                } message: {
+                    Text(viewModel.alertMessage)
+                }
+            } else {
+                ProgressView().font(.largeTitle)
+            }
+        }
+        .task {
+            if viewModel == nil {
+                viewModel = NoteViewModel(modelContext, note: note)
+            }
+        }
+    }
+    
+    // MARK: - View components
+    private func buildForm(with bindableViewModel: Bindable<NoteViewModel>) -> some View {
         Form {
             Section("Header") {
-                TextField("Name", text: $name)
+                TextField("Name", text: bindableViewModel.selectedNoteName)
                     .font(.title.bold())
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
                     .focused($focusState, equals: .name)
                 
-                Picker("Parent Slipbox", selection: $parentSlipbox) {
+                Picker("Parent Slipbox", selection: bindableViewModel.selectedNoteParentSlipbox) {
                     ForEach(viewModel.slipboxes.sorted()) { possibleParent in
                         Text(possibleParent.name)
                             .tag(possibleParent)
@@ -64,15 +84,15 @@ struct NoteView: View {
                     Text("Tags")
                         .font(.title3.bold())
                     HStack(spacing: 8) {
-                        ForEach(tags) { tag in
+                        ForEach(viewModel.selectedNoteTags) { tag in
                             buildTagButton(for: tag)
                         }
                     }
                     
                     ZStack(alignment: .searchBarBottom) {
-                        searchTagsBar
+                        buildSearchTagsBar(with: bindableViewModel)
                         // TODO: - Melhorar o alignment guide para que o overlay fique literalmente por cima de todos os outros conteúdos dentro da ZStack, mas alinhado abaixo do searchTagsBar
-                        overlayList
+                        overlayList(with: bindableViewModel)
                             .alignmentGuide(VerticalAlignment.searchBarBottom) { dimension in
                                 dimension[.top]
                             }
@@ -83,7 +103,7 @@ struct NoteView: View {
             }
             
             Section("Note Content") {
-                TextEditor(text: $contentBody)
+                TextEditor(text: bindableViewModel.selectedNoteContentBody)
                     .attributedTextFormattingDefinition(NoteFormattingDefinition())
                     .autocorrectionDisabled()
                     .textInputAutocapitalization(.never)
@@ -93,45 +113,17 @@ struct NoteView: View {
             
             Section {
                 Button("Delete note", role: .destructive) {
-                    viewModel.noteToDelete = note
+                    viewModel.controlModels.noteToDelete = note
                     isAlertPresented = true
                 }
             }
         }
-        .alert(viewModel.alertTitle, isPresented: $isAlertPresented) {
-            viewModel.buildAlertActions {
-                dismiss()
-            }
-        } message: {
-            Text(viewModel.alertMessage)
-        }
-        .onAppear {
-            applyChangesToAttributedText()
-        }
-        .onChange(of: contentBody) {
-            applyChangesToAttributedText()
-        }
-        .onChange(of: newTagName) { oldValue, newValue in
-            if Tag.isNameValid(newValue, allTags: viewModel.tags) {
-                newTagName = newValue
-            } else {
-                newTagName = oldValue
-            }
-        }
-        .onChange(of: name) { oldValue, newValue in
-            if note.isNameValid(newValue, allNotes: viewModel.notes) {
-                name = newValue
-            } else {
-                name = oldValue
-            }
-        }
-        .onDisappear(perform: saveChanges)
     }
     
-    private var searchTagsBar: some View {
+    private func buildSearchTagsBar(with bindableViewModel: Bindable<NoteViewModel>) -> some View {
         HStack(spacing: 8) {
             Image(systemName: "plus")
-            TextField("Add tag", text: $newTagName)
+            TextField("Add tag", text: bindableViewModel.newTagName)
                 .lineLimit(1)
                 .fixedSize(horizontal: true, vertical: false)
                 .textInputAutocapitalization(.never)
@@ -147,26 +139,24 @@ struct NoteView: View {
     }
     
     @ViewBuilder
-    private var overlayList: some View {
-        if focusState == .tags && !newTagName.isEmpty {
+    private func overlayList(with bindableViewModel: Bindable<NoteViewModel>) -> some View {
+        if focusState == .tags && !viewModel.newTagName.isEmpty {
             VStack(alignment: .leading, spacing: 8) {
-                ForEach(filteredTags) { tag in
-                    if !tags.contains(tag) {
+                ForEach(viewModel.filteredTags) { tag in
+                    if !viewModel.selectedNoteTags.contains(tag) {
                         Button(tag.name, systemImage: "tag") {
                             withAnimation {
-                                tags.append(tag)
-                                newTagName = ""
+                                viewModel.addTagToNote(tag)
                             }
                         }
                         .labelIconToTitleSpacing(8)
                     }
                 }
-                if Tag.isNameValid(newTagName, allTags: viewModel.tags) {
-                    Button("Create \(newTagName)", systemImage: "plus") {
+                if viewModel.isNewTagNameValid() {
+                    Button("Create \(viewModel.newTagName)", systemImage: "plus") {
                         withAnimation {
                             // TODO: - Lidar com isso e corrigir o bug do overlay das tags - e componentizar isso, para usar nas linkedNotes também.
-                            tags.append(viewModel.createAndReturnNewTag(name: newTagName))
-                            newTagName = ""
+                            viewModel.createNewTagAndAddToSelectedNote()
                         }
                     }
                     .labelIconToTitleSpacing(8)
@@ -182,7 +172,7 @@ struct NoteView: View {
         Menu {
             Button("Remove tag '\(tag.name)' from note", systemImage: "tag.slash", role: .destructive) {
                 withAnimation {
-                    tags.removeAll { $0.id == tag.id }
+                    viewModel.selectedNoteTags.removeAll { $0.id == tag.id }
                 }
             }
         } label: {
@@ -195,14 +185,8 @@ struct NoteView: View {
     }
     
     // MARK: - Initializer
-    init(_ note: Note, viewModel: MainViewModel) {
-        self.note = note
-        self._name = State(initialValue: note.name)
-        self._parentSlipbox = State(initialValue: note.slipbox)
-        self._tags = State(initialValue: note.tags)
-        self._linkedNotes = State(initialValue: note.linkedNotes)
-        self._contentBody = State(initialValue: note.contentBody)
-        self._viewModel = Bindable(viewModel)
+    init(_ note: Note) {
+        self._note = Bindable(note)
     }
     
     // MARK: - Auxiliary functions
@@ -212,7 +196,7 @@ struct NoteView: View {
         var notesToLinkRanges: [UUID: RangeSet<AttributedString.Index>] = [:]
         
         for noteToLink in notesToLinkTitles {
-            notesToLinkRanges[noteToLink.key] = RangeSet(contentBody.characters.ranges(of: noteToLink.value.characters))
+            notesToLinkRanges[noteToLink.key] = RangeSet(viewModel.selectedNoteContentBody.characters.ranges(of: noteToLink.value.characters))
         }
         
         for rangeSet in notesToLinkRanges {
@@ -220,9 +204,9 @@ struct NoteView: View {
                   !rangeSet.value.isEmpty else {
                 continue
             }
-            contentBody[rangeSet.value].linkedNote = rangeSet.key
-            if !linkedNotes.contains(noteToLink) {
-                linkedNotes.append(noteToLink)
+            viewModel.selectedNoteContentBody[rangeSet.value].linkedNote = rangeSet.key
+            if !viewModel.selectedNoteLinkedNotes.contains(noteToLink) {
+                viewModel.selectedNoteLinkedNotes.append(noteToLink)
             }
         }
         
@@ -231,7 +215,7 @@ struct NoteView: View {
         var tagRanges: [UUID: RangeSet<AttributedString.Index>] = [:]
         
         for tagTitle in tagTitles {
-            tagRanges[tagTitle.key] = RangeSet(contentBody.characters.ranges(of: tagTitle.value.characters))
+            tagRanges[tagTitle.key] = RangeSet(viewModel.selectedNoteContentBody.characters.ranges(of: tagTitle.value.characters))
         }
         
         for rangeSet in tagRanges {
@@ -239,18 +223,10 @@ struct NoteView: View {
                   !rangeSet.value.isEmpty else {
                 continue
             }
-            contentBody[rangeSet.value].tag = rangeSet.key
-            if !tags.contains(tag) {
-                tags.append(tag)
+            viewModel.selectedNoteContentBody[rangeSet.value].tag = rangeSet.key
+            if !viewModel.selectedNoteTags.contains(tag) {
+                viewModel.selectedNoteTags.append(tag)
             }
         }
-    }
-    
-    private func saveChanges() {
-        note.setContent(contentBody)
-        note.setNameAndUpdateAllNotes(name, allNotes: viewModel.notes)
-        note.setParentSlipbox(parentSlipbox)
-        note.setTags(tags)
-        note.setLinkedNotes(linkedNotes)
     }
 }

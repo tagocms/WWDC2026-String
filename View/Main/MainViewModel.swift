@@ -16,35 +16,27 @@ class MainViewModel {
     // MARK: - Properties
     private(set) var modelContext: ModelContext
     
-    // MARK: - Selected models
-    var selectedNote: Note?
-    var noteToDelete: Note?
-    
-    var selectedSlipbox: Slipbox?
-    var slipboxToDelete: Slipbox?
-    
-    // MARK: - Filters
-    var filterTags: [Tag] = []
-    var filterSlipbox: Slipbox? = nil
+    // MARK: - ControlModels
+    struct ControlModels {
+        // MARK: - Selection
+        var noteToOpen: Note?
+        var noteToDelete: Note?
+        
+        var slipboxToOpen: Slipbox?
+        var slipboxToDelete: Slipbox?
+        
+        // MARK: - Filters
+        var filterTags: [Tag] = []
+        var filterSlipbox: Slipbox? = nil
+    }
+    var controlModels = ControlModels()
     
     // MARK: - Model arrays
     var notes: [Note] {
         return ((try? modelContext.fetch(Note.fetchDescriptor)) ?? [])
     }
     var filteredNotes: [Note] {
-        notes.filter { note in
-            let filter = (filterSlipbox, filterTags)
-            switch filter {
-            case let (.none, tags) where tags.isEmpty:
-                return true
-            case let (.none, tags):
-                return doesNoteContainAnyTag(note, tags: tags)
-            case let (slipbox?, tags) where tags.isEmpty:
-                return isNoteInSlipbox(note, slipbox: slipbox)
-            case let (slipbox?, tags):
-                return isNoteInSlipbox(note, slipbox: slipbox) && doesNoteContainAnyTag(note, tags: tags)
-            }
-        }
+        filteredNotes(notes)
     }
     var slipboxes: [Slipbox] {
         let fetchDescriptor = FetchDescriptor<Slipbox>(sortBy: [])
@@ -57,31 +49,31 @@ class MainViewModel {
     
     // MARK: - Alert
     var alertTitle: String {
-        if let slipboxToDelete {
+        if let slipboxToDelete = controlModels.slipboxToDelete {
             return "Delete slipbox \(slipboxToDelete.name)"
-        } else if let noteToDelete {
+        } else if let noteToDelete = controlModels.noteToDelete {
             return "Delete note \(noteToDelete.name)"
         }
         return ""
     }
     var alertMessage: String {
-        if let slipboxToDelete {
+        if let slipboxToDelete = controlModels.slipboxToDelete {
             return "Are you sure you want to delete this slipbox? Every note and folder inside it will also be deleted - there are \(slipboxToDelete.totalNoteCount) notes inside."
-        } else if let noteToDelete {
+        } else if let noteToDelete = controlModels.noteToDelete {
             return "Are you sure you want to delete this note (\(noteToDelete.name))?"
         }
         return ""
     }
     @ViewBuilder @MainActor
     func buildAlertActions(onDelete: (() -> Void)? = nil) -> some View {
-        if let slipboxToDelete {
-            Button("Cancel", role: .cancel) { self.slipboxToDelete = nil }
+        if let slipboxToDelete = controlModels.slipboxToDelete {
+            Button("Cancel", role: .cancel) { self.controlModels.slipboxToDelete = nil }
             Button("Delete") {
                 self.delete(slipboxToDelete)
                 onDelete?()
             }
-        } else if let noteToDelete {
-            Button("Cancel", role: .cancel) { self.noteToDelete = nil }
+        } else if let noteToDelete = controlModels.noteToDelete {
+            Button("Cancel", role: .cancel) { self.controlModels.noteToDelete = nil }
             Button("Delete") {
                 self.delete(noteToDelete)
                 onDelete?()
@@ -102,7 +94,7 @@ class MainViewModel {
         for item in queryItems {
             guard item.name == "data", let stringData = item.value else { continue }
             guard let uuid = UUID(uuidString: stringData) else { return }
-            selectedNote = notes.first(where: { $0.id == uuid })
+            controlModels.noteToOpen = notes.first(where: { $0.id == uuid })
         }
     }
     
@@ -138,12 +130,12 @@ class MainViewModel {
         let title = nameWithoutDuplicates(for: notes)
         let note = Note(slipbox: slipbox, title: title)
         createAndSaveToModelContext(note)
-        selectedNote = note
+        controlModels.noteToOpen = note
     }
     
     /// Interface for the view, creates a new note in the selected slipbox or in the first available slipbox.
     func createNewNote() {
-        if let slipbox = filterSlipbox {
+        if let slipbox = controlModels.filterSlipbox {
             createNewNote(in: slipbox)
         } else if let slipbox = slipboxes.first {
             createNewNote(in: slipbox)
@@ -158,7 +150,7 @@ class MainViewModel {
         let slipbox = Slipbox(title: title)
         createAndSaveToModelContext(slipbox)
         
-        selectedSlipbox = slipbox
+        controlModels.slipboxToOpen = slipbox
         
         return slipbox
     }
@@ -169,10 +161,13 @@ class MainViewModel {
     }
     
     /// Creates and returns a new tag.
-    func createAndReturnNewTag(name: String) -> Tag {
-        let tag = Tag(name: name)
-        createAndSaveToModelContext(tag)
-        return tag
+    func createAndReturnNewTag(name: String) -> Tag? {
+        if Tag.isNameValid(name, allTags: tags) {
+            let tag = Tag(name: name)
+            createAndSaveToModelContext(tag)
+            return tag
+        }
+        return nil
     }
     
     /// Primary interface for creating a new tag for the view.
@@ -184,8 +179,8 @@ class MainViewModel {
     func delete<T: PersistentModel>(_ model: T?) {
         guard let model else { return }
         deleteAndSaveToModelContext(model)
-        slipboxToDelete = nil
-        noteToDelete = nil
+        controlModels.slipboxToDelete = nil
+        controlModels.noteToDelete = nil
     }
     
     /// Sets a link from one note to the other.
@@ -216,10 +211,10 @@ class MainViewModel {
     
     /// Treats the user's tap on a tag in the tag filter list.
     func onFilterTagTapped(_ tag: Tag) {
-        if filterTags.contains(tag) {
-            filterTags.removeAll(where: { $0 === tag })
+        if controlModels.filterTags.contains(tag) {
+            controlModels.filterTags.removeAll(where: { $0 === tag })
         } else {
-            filterTags.append(tag)
+            controlModels.filterTags.append(tag)
         }
     }
     
@@ -276,6 +271,23 @@ class MainViewModel {
     private func deleteAndSaveToModelContext<T: PersistentModel>(_ item: T) {
         modelContext.delete(item)
         try? modelContext.save()
+    }
+    
+    /// Helper function for returning filtered notes from the modelContext.
+    func filteredNotes(_ notes: [Note]) -> [Note] {
+        notes.filter { note in
+            let filter = (controlModels.filterSlipbox, controlModels.filterTags)
+            switch filter {
+            case let (.none, tags) where tags.isEmpty:
+                return true
+            case let (.none, tags):
+                return doesNoteContainAnyTag(note, tags: tags)
+            case let (slipbox?, tags) where tags.isEmpty:
+                return isNoteInSlipbox(note, slipbox: slipbox)
+            case let (slipbox?, tags):
+                return isNoteInSlipbox(note, slipbox: slipbox) && doesNoteContainAnyTag(note, tags: tags)
+            }
+        }
     }
 }
 
