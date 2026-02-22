@@ -15,38 +15,23 @@ final class NoteViewModel: MainViewModel {
     let note: Note
     var selectedNoteName: String {
         get { note.name }
-        set {
-            note.setNameAndUpdateAllNotes(newValue, allNotes: notes)
-            try? modelContext.save()
-        }
+        set { note.setNameAndUpdateAllNotes(newValue, allNotes: notes) }
     }
     var selectedNoteParentSlipbox: Slipbox {
         get { note.slipbox }
-        set {
-            note.setParentSlipbox(newValue)
-            try? modelContext.save()
-        }
+        set { note.setParentSlipbox(newValue) }
     }
     var selectedNoteTags: [Tag] {
         get { note.tags }
-        set {
-            note.setTags(newValue)
-            try? modelContext.save()
-        }
+        set { note.setTags(newValue) }
     }
     var selectedNoteLinkedNotes: [Note] {
         get { note.linkedNotes }
-        set {
-            note.setLinkedNotes(newValue)
-            try? modelContext.save()
-        }
+        set { note.setLinkedNotes(newValue) }
     }
     var selectedNoteContentBody: AttributedString {
         get { note.contentBody }
-        set {
-            note.setContent(newValue)
-            try? modelContext.save()
-        }
+        set { note.setContent(newValue) }
     }
     var newTagName: String = ""
     var filteredTags: [Tag] { Note.filtered(tags, by: newTagName) }
@@ -55,6 +40,11 @@ final class NoteViewModel: MainViewModel {
     init(_ modelContext: ModelContext, note: Note) {
         self.note = note
         super.init(modelContext)
+    }
+    
+    @MainActor
+    deinit {
+        try? modelContext.save()
     }
     
     // MARK: - Intent functions

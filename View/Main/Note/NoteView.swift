@@ -78,28 +78,16 @@ struct NoteView: View {
                 }
                 .font(.title3.bold())
                 
-                
-                
-                HStack(spacing: 16) {
-                    Text("Tags")
-                        .font(.title3.bold())
-                    HStack(spacing: 8) {
-                        ForEach(viewModel.selectedNoteTags) { tag in
-                            buildTagButton(for: tag)
-                        }
-                    }
-                    
-                    ZStack(alignment: .searchBarBottom) {
-                        buildSearchTagsBar(with: bindableViewModel)
-                        // TODO: - Melhorar o alignment guide para que o overlay fique literalmente por cima de todos os outros conteúdos dentro da ZStack, mas alinhado abaixo do searchTagsBar
-                        overlayList(with: bindableViewModel)
-                            .alignmentGuide(VerticalAlignment.searchBarBottom) { dimension in
-                                dimension[.top]
-                            }
-                            .padding(.top, 8)
-                    }
-                }
-                .buttonStyle(.plain)
+                HStackHeaderView(
+                    collection: bindableViewModel.selectedNoteTags,
+                    text: bindableViewModel.newTagName,
+                    titleText: "tag",
+                    filteredItems: viewModel.filteredTags,
+                    systemImage: "tag",
+                    deleteSystemImage: "tag.slash",
+                    onCreate: viewModel.createNewTagAndAddToSelectedNote,
+                    isAllowedToCreate: viewModel.isNewTagNameValid
+                )
             }
             
             Section("Note Content") {
@@ -107,7 +95,6 @@ struct NoteView: View {
                     .attributedTextFormattingDefinition(NoteFormattingDefinition())
                     .autocorrectionDisabled()
                     .textInputAutocapitalization(.never)
-                    .multilineTextAlignment(.leading)
                     .frame(height: 800)
             }
             
@@ -117,70 +104,6 @@ struct NoteView: View {
                     isAlertPresented = true
                 }
             }
-        }
-    }
-    
-    private func buildSearchTagsBar(with bindableViewModel: Bindable<NoteViewModel>) -> some View {
-        HStack(spacing: 8) {
-            Image(systemName: "plus")
-            TextField("Add tag", text: bindableViewModel.newTagName)
-                .lineLimit(1)
-                .fixedSize(horizontal: true, vertical: false)
-                .textInputAutocapitalization(.never)
-                .autocorrectionDisabled()
-                .focused($focusState, equals: .tags)
-        }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
-        .background(accentColor.opacity(0.2))
-        .foregroundStyle(accentColor)
-        .clipShape(.capsule)
-        .frame(width: 100, alignment: .leading)
-    }
-    
-    @ViewBuilder
-    private func overlayList(with bindableViewModel: Bindable<NoteViewModel>) -> some View {
-        if focusState == .tags && !viewModel.newTagName.isEmpty {
-            VStack(alignment: .leading, spacing: 8) {
-                ForEach(viewModel.filteredTags) { tag in
-                    if !viewModel.selectedNoteTags.contains(tag) {
-                        Button(tag.name, systemImage: "tag") {
-                            withAnimation {
-                                viewModel.addTagToNote(tag)
-                            }
-                        }
-                        .labelIconToTitleSpacing(8)
-                    }
-                }
-                if viewModel.isNewTagNameValid() {
-                    Button("Create \(viewModel.newTagName)", systemImage: "plus") {
-                        withAnimation {
-                            // TODO: - Lidar com isso e corrigir o bug do overlay das tags - e componentizar isso, para usar nas linkedNotes também.
-                            viewModel.createNewTagAndAddToSelectedNote()
-                        }
-                    }
-                    .labelIconToTitleSpacing(8)
-                }
-            }
-            .animation(.default, value: focusState)
-            .transition(.scale)
-        }
-    }
-    
-    @ViewBuilder
-    private func buildTagButton(for tag: Tag) -> some View {
-        Menu {
-            Button("Remove tag '\(tag.name)' from note", systemImage: "tag.slash", role: .destructive) {
-                withAnimation {
-                    viewModel.selectedNoteTags.removeAll { $0.id == tag.id }
-                }
-            }
-        } label: {
-            Text(tag.name)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(accentColor.opacity(0.2))
-                .clipShape(.capsule)
         }
     }
     

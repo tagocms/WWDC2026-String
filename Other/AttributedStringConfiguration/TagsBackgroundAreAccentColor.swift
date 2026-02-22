@@ -17,10 +17,6 @@ struct TagsBackgroundAreAccentColor: AttributedTextValueConstraint {
             container.backgroundColor = .accentColor.opacity(0.2)
         } else {
             container.backgroundColor = nil
-            // TODO: - Decidir como vai ficar
-//            if container.foregroundColor == .accentColor {
-//                container.foregroundColor = nil
-//            }
         }
     }
 }

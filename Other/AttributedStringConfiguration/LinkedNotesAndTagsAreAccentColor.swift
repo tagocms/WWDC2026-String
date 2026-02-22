@@ -17,10 +17,6 @@ struct LinkedNotesAndTagsAreAccentColor: AttributedTextValueConstraint {
             container.foregroundColor = .accentColor
         } else {
             container.foregroundColor = nil
-            // TODO: - Decidir como vai ficar
-//            if container.foregroundColor == .accentColor {
-//                container.foregroundColor = nil
-//            }
         }
     }
 }
