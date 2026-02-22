@@ -15,23 +15,38 @@ final class NoteViewModel: MainViewModel {
     let note: Note
     var selectedNoteName: String {
         get { note.name }
-        set { note.setNameAndUpdateAllNotes(newValue, allNotes: notes) }
+        set {
+            note.setNameAndUpdateAllNotes(newValue, allNotes: notes)
+            try? modelContext.save()
+        }
     }
     var selectedNoteParentSlipbox: Slipbox {
         get { note.slipbox }
-        set { note.setParentSlipbox(newValue) }
+        set {
+            note.setParentSlipbox(newValue)
+            try? modelContext.save()
+        }
     }
     var selectedNoteTags: [Tag] {
         get { note.tags }
-        set { note.setTags(newValue) }
+        set {
+            note.setTags(newValue)
+            try? modelContext.save()
+        }
     }
     var selectedNoteLinkedNotes: [Note] {
         get { note.linkedNotes }
-        set { note.setLinkedNotes(newValue) }
+        set {
+            note.setLinkedNotes(newValue)
+            try? modelContext.save()
+        }
     }
     var selectedNoteContentBody: AttributedString {
         get { note.contentBody }
-        set { note.setContent(newValue) }
+        set {
+            note.setContent(newValue)
+            try? modelContext.save()
+        }
     }
     var newTagName: String = ""
     var filteredTags: [Tag] { Note.filtered(tags, by: newTagName) }

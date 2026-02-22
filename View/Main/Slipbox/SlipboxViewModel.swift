@@ -15,11 +15,17 @@ final class SlipboxViewModel: MainViewModel {
     let slipbox: Slipbox
     var selectedSlipboxName: String {
         get { slipbox.name }
-        set { slipbox.setName(newValue, allSlipboxes: slipboxes) }
+        set {
+            slipbox.setName(newValue, allSlipboxes: slipboxes)
+            try? modelContext.save()
+        }
     }
     var selectedSlipboxParentSlipbox: Slipbox? {
         get { slipbox.parentSlipbox }
-        set { slipbox.setParentSlipbox(newValue) }
+        set {
+            slipbox.setParentSlipbox(newValue)
+            try? modelContext.save()
+        }
     }
     
     // MARK: - Initializer
