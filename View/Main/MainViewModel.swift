@@ -30,6 +30,24 @@ class MainViewModel {
         var filterSlipbox: Slipbox? = nil
     }
     var controlModels = ControlModels()
+    // MARK: - View state
+    var navigationSplitViewVisibility = NavigationSplitViewVisibility.detailOnly
+    var sidebarSelection: SidebarSelection? {
+        get {
+            guard let filterSlipbox = controlModels.filterSlipbox else { return .root }
+            return .slipbox(filterSlipbox)
+        }
+        set {
+            switch newValue {
+            case .root:
+                filterForSlipbox(nil)
+            case .slipbox(let slipbox):
+                filterForSlipbox(slipbox)
+            default:
+                filterForSlipbox(nil)
+            }
+        }
+    }
     
     // MARK: - Model arrays
     var notes: [Note] {
@@ -200,7 +218,7 @@ class MainViewModel {
             
             let fleetingNote = Note(
                 tags: [ideaTag, astrologyTag],
-                slipbox: permanentSlipbox,
+                slipbox: fleetingSlipbox,
                 title: "Fleeting Note Example",
                 contentBody: AttributedString(
                     """
@@ -213,7 +231,7 @@ class MainViewModel {
             let literatureNote = Note(
                 tags: [astrologyTag],
                 linkedNotes: [fleetingNote],
-                slipbox: permanentSlipbox,
+                slipbox: referenceSlipbox,
                 title: "Literature Note Example",
                 contentBody: AttributedString(
                     """
@@ -334,14 +352,18 @@ class MainViewModel {
     /// Deletes a model from the model context.
     func delete<T: PersistentModel>(_ model: T?) {
         guard let model else { return }
-        deleteAndSaveToModelContext(model)
-        controlModels.slipboxToDelete = nil
-        controlModels.noteToDelete = nil
+        withAnimation {
+            deleteAndSaveToModelContext(model)
+            controlModels.slipboxToDelete = nil
+            controlModels.noteToDelete = nil
+        }
     }
     
     /// Sets a link from one note to the other.
     func setLink(from note: Note, to possibleLink: Note) {
-        note.addLink(to: possibleLink)
+        withAnimation {
+            note.addLink(to: possibleLink)
+        }
     }
     
     /// Calculates the distance between a note and the user's drag location and, if it coincides with the location of another note, links them together.
@@ -362,15 +384,27 @@ class MainViewModel {
     
     /// Remove a link from one note to another.
     func removeLink(from note: Note, to link: Note) {
-        note.removeLink(to: link)
+        withAnimation {
+            note.removeLink(to: link)
+        }
     }
     
     /// Treats the user's tap on a tag in the tag filter list.
     func onFilterTagTapped(_ tag: Tag) {
-        if controlModels.filterTags.contains(tag) {
-            controlModels.filterTags.removeAll(where: { $0 === tag })
-        } else {
-            controlModels.filterTags.append(tag)
+        withAnimation {
+            if controlModels.filterTags.contains(tag) {
+                controlModels.filterTags.removeAll(where: { $0 === tag })
+            } else {
+                controlModels.filterTags.append(tag)
+            }
+        }
+    }
+    
+    /// Filters the notes in the model to the selected slipbox.
+    func filterForSlipbox(_ slipbox: Slipbox? = nil) {
+        withAnimation {
+            controlModels.filterSlipbox = slipbox
+//            navigationSplitViewVisibility = .detailOnly
         }
     }
     
@@ -419,14 +453,18 @@ class MainViewModel {
     
     /// Helper function for creating a model and saving it to the model context.
     private func createAndSaveToModelContext<T: PersistentModel>(_ item: T) {
-        modelContext.insert(item)
-        try? modelContext.save()
+        withAnimation {
+            modelContext.insert(item)
+            try? modelContext.save()
+        }
     }
     
     /// Helper function for deleting a model and saving it to the model context.
     private func deleteAndSaveToModelContext<T: PersistentModel>(_ item: T) {
-        modelContext.delete(item)
-        try? modelContext.save()
+        withAnimation {
+            modelContext.delete(item)
+            try? modelContext.save()
+        }
     }
     
     /// Helper function for returning filtered notes from the modelContext.

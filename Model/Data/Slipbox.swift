@@ -111,4 +111,9 @@ extension Slipbox {
         
         return true
     }
+    
+    /// Children array for the Outline Group View in SwiftUI.
+    var outlineChildren: [Slipbox]? {
+        slipboxes.isEmpty ? nil : slipboxes
+    }
 }

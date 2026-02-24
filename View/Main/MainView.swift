@@ -69,8 +69,17 @@ struct MainView: View {
     
     // MARK: - View Body
     var body: some View {
-        NavigationStack {
-            fullViewBody
+        Group {
+            if let viewModel {
+                let bindableViewModel = Bindable(viewModel)
+                NavigationSplitView(columnVisibility: bindableViewModel.navigationSplitViewVisibility) {
+                    sidebarViewBody(bindableViewModel)
+                } detail: {
+                    fullViewBody
+                }
+            } else {
+                ProgressView().font(.largeTitle)
+            }
         }
         .task {
             if viewModel == nil {
@@ -87,8 +96,60 @@ struct MainView: View {
     }
 }
 
+// MARK: - Slipbox Row View
+extension MainView {
+    private struct SlipboxRowView: View {
+        let slipbox: Slipbox
+
+        var body: some View {
+            Group {
+                if slipbox.slipboxes.isEmpty {
+                    Label(slipbox.name, systemImage: "folder")
+                } else {
+                    DisclosureGroup {
+                        ForEach(slipbox.slipboxes) { nestedSlipbox in
+                            SlipboxRowView(slipbox: nestedSlipbox)
+                        }
+                    } label: {
+                        Label(slipbox.name, systemImage: "folder")
+                    }
+                }
+            }
+            .tag(SidebarSelection.slipbox(slipbox))
+        }
+    }
+}
+
 // MARK: - View Body components
 extension MainView {
+    private func sidebarViewBody(_ bindableViewModel: Bindable<MainViewModel>) -> some View {
+        List(selection: bindableViewModel.sidebarSelection) {
+            DisclosureGroup {
+                ForEach(slipboxesFromQuery.filter { $0.parentSlipbox == nil }) { slipbox in
+                    listItemView(for: slipbox)
+                        .contextMenu {
+                            Button("Edit \(slipbox.name)", systemImage: "pencil") {
+                                viewModel.controlModels.slipboxToOpen = slipbox
+                            }
+                            Button("Delete \(slipbox.name)", systemImage: "trash", role: .destructive) {
+                                viewModel.controlModels.slipboxToDelete = slipbox
+                                isAlertPresented = true
+                            }
+                        }
+                        .matchedTransitionSource(id: slipbox.id, in: slipboxNamespace)
+                }
+            } label: {
+                Label("Root slipbox", systemImage: "folder")
+            }
+            .tag(SidebarSelection.root)
+            .contentShape(Rectangle())
+        }
+    }
+    
+    private func listItemView(for slipbox: Slipbox) -> some View {
+        SlipboxRowView(slipbox: slipbox)
+    }
+    
     private var fullViewBody: some View {
         Group {
             if let viewModel {
@@ -162,10 +223,6 @@ extension MainView {
     @ViewBuilder
     private var dockBar: some View {
         HStack(alignment: .dockBarLastTextBaseline) {
-            slipboxesDockBarButtons
-            Divider()
-                .padding(.horizontal, Constants.standardPadding)
-                .frame(height: Constants.dockBarDividerHeight)
             fixedDockBarButtons
                 .alignmentGuide(VerticalAlignment.dockBarLastTextBaseline) { dimension in
                     dimension[VerticalAlignment.bottom]
@@ -176,30 +233,6 @@ extension MainView {
         .clipShape(.buttonBorder)
         .padding()
         .zIndex(Constants.dockBarZIndex)
-    }
-    
-    @ViewBuilder
-    private var slipboxesDockBarButtons: some View {
-        ScrollView(.horizontal) {
-            HStack(alignment: .dockBarLastTextBaseline, spacing: Constants.dockBarSpacing) {
-                Button {
-                    viewModel.controlModels.filterSlipbox = nil
-                } label: {
-                    IconAndTextView(iconName: "folder", text: "All", isSelected: viewModel.controlModels.filterSlipbox == nil)
-                }
-                .alignmentGuide(.dockBarLastTextBaseline) { dimension in
-                    dimension[.top]
-                }
-                ForEach(viewModel.slipboxes) { slipbox in
-                    buildSlipboxButton(slipbox)
-                        .alignmentGuide(.dockBarLastTextBaseline) { dimension in
-                            dimension[.top]
-                        }
-                }
-            }
-        }
-        .scrollIndicators(.hidden)
-        .scrollBounceBehavior(.basedOnSize)
     }
     
     @ViewBuilder
@@ -404,26 +437,6 @@ extension MainView {
             }
             .gesture(noteDragGesture(for: note, in: geometry))
             .zIndex(Constants.cardZIndex)
-    }
-    
-    @ViewBuilder
-    private func buildSlipboxButton(_ slipbox: Slipbox) -> some View {
-        Button {
-            viewModel.controlModels.filterSlipbox = slipbox
-        } label: {
-            IconAndTextView(iconName: "folder", text: slipbox.name, isSelected: viewModel.controlModels.filterSlipbox === slipbox)
-        }
-        .contextMenu {
-            Button("Edit \(slipbox.name)", systemImage: "pencil") {
-                viewModel.controlModels.slipboxToOpen = slipbox
-            }
-            
-            Button("Delete \(slipbox.name)", systemImage: "trash", role: .destructive) {
-                viewModel.controlModels.slipboxToDelete = slipbox
-                isAlertPresented = true
-            }
-        }
-        .matchedTransitionSource(id: slipbox.id, in: slipboxNamespace)
     }
 }
 
