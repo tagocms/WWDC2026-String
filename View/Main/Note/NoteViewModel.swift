@@ -35,7 +35,7 @@ final class NoteViewModel: MainViewModel {
     }
     
     var newTagName: String = ""
-    var filteredTags: [Tag] { Note.filtered(tags, by: newTagName) }
+    var filteredTags: [Tag] { Tag.filtered(tags, by: newTagName) }
     
     var newLinkedNoteName: String = ""
     var filteredLinkedNotes: [Note] {

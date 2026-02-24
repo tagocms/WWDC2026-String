@@ -18,7 +18,7 @@ extension Named {
         
         outerLoop: for item in items {
             innerLoop: for component in stringComponents {
-                guard item.name.contains(component) else { continue outerLoop }
+                guard item.name.localizedCaseInsensitiveContains(component) else { continue outerLoop }
             }
             filteredItems.append(item)
         }

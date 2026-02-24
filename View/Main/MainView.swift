@@ -40,6 +40,9 @@ struct MainView: View {
     }
     
     // MARK: - View UI State
+    @State private var searchText = ""
+    @FocusState private var isSearchFocused: Bool
+    
     @State private var scaleEffect = 1.0
     @GestureState private var scaleEffectGestureState: CGFloat = 1
     @State private var panDistance: CGOffset = CGOffset.zero
@@ -124,6 +127,22 @@ extension MainView {
                 }
                 .matchedTransitionSource(id: "settings", in: defaultNamespace)
             }
+        }
+        .searchable(text: $searchText, placement: .toolbar, prompt: "Search notes")
+        .searchFocused($isSearchFocused)
+        .searchSuggestions {
+            ForEach(Note.filtered(notesFromQuery, by: searchText).prefix(8)) { item in
+                Label(item.name, systemImage: "document")
+                    .searchCompletion(item.name)
+            }
+        }
+        .onSubmit(of: .search) {
+            guard let first = Note.filtered(notesFromQuery, by: searchText).first else {
+                return
+            }
+            viewModel.controlModels.noteToOpen = first
+            searchText = ""
+            isSearchFocused = false
         }
     }
     
@@ -509,10 +528,10 @@ extension MainView {
     private var multitouchGesture: some UIGestureRecognizerRepresentable {
         MultitouchGestureRecognizer()
             .onEnded { value in
-                if value.translation.height >= 50 && isShowingUIControls {
-                    isShowingUIControls = false
-                } else if value.translation.height < 50 && !isShowingUIControls {
-                    isShowingUIControls = true
+                if value.translation.height < 50 && isSearchFocused {
+                    isSearchFocused = false
+                } else if value.translation.height >= 50 && !isSearchFocused {
+                    isSearchFocused = true
                 }
             }
     }
