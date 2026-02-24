@@ -14,8 +14,6 @@ struct SettingsView: View {
     // MARK: - UI settings
     @AppStorage("theme") private var theme: Theme = .system
     @AppStorage("isShowingUIControls") private var isShowingUIControls: Bool = true
-    @AppStorage("automaticTagRemoval") private var automaticTagRemoval: Bool = false
-    @AppStorage("automaticLinkedNoteRemoval") private var automaticLinkedNoteRemoval: Bool = false
     @AppStorage("colorKey") private var accentColor: Color = Color.accentColor
     
     var body: some View {
@@ -29,8 +27,6 @@ struct SettingsView: View {
                 }
                 ColorPicker("Accent color", selection: $accentColor, supportsOpacity: false)
                 Toggle("Show UI Controls", isOn: $isShowingUIControls)
-                Toggle("Automatic Tag Removal", isOn: $automaticTagRemoval)
-                Toggle("Automatic Linked Note Removal", isOn: $automaticLinkedNoteRemoval)
             }
         }
         .presentationDragIndicator(.visible)

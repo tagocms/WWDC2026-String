@@ -39,7 +39,7 @@ final class NoteViewModel: MainViewModel {
     
     var newLinkedNoteName: String = ""
     var filteredLinkedNotes: [Note] {
-        Note.filtered(notes, by: newLinkedNoteName).filter { $0 !== note }
+        Note.filtered(notes, by: newLinkedNoteName).filter { $0 != note }
     }
     
     // MARK: - Initializer

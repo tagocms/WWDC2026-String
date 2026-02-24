@@ -55,6 +55,12 @@ extension Slipbox: Comparable {
     }
 }
 
+extension Slipbox: Equatable {
+    static func == (lhs: Slipbox, rhs: Slipbox) -> Bool {
+        lhs.id == rhs.id
+    }
+}
+
 extension Slipbox: StandardFetchable {
     static let fetchDescriptor: FetchDescriptor<Slipbox> = FetchDescriptor(sortBy: [SortDescriptor(\.name, order: .forward)])
 }
@@ -82,8 +88,8 @@ extension Slipbox {
     /// Recursive method that verifies if it is possible for a slipbox to have a specific newParentSlipbox.
     func isParentSlipboxValid(_ newParentSlipbox: Slipbox?, originalSlipbox: Slipbox? = nil) -> Bool {
         guard let newParentSlipbox else { return true }
-        guard newParentSlipbox !== self else { return false }
-        guard newParentSlipbox !== originalSlipbox else { return false }
+        guard newParentSlipbox != self else { return false }
+        guard newParentSlipbox != originalSlipbox else { return false }
         
         return newParentSlipbox.isParentSlipboxValid(newParentSlipbox.parentSlipbox, originalSlipbox: originalSlipbox == nil ? self : originalSlipbox)
     }

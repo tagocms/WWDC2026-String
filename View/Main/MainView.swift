@@ -126,7 +126,7 @@ extension MainView {
         List(selection: bindableViewModel.sidebarSelection) {
             DisclosureGroup(isExpanded: bindableViewModel.isRootSlipboxExpanded) {
                 ForEach(slipboxesFromQuery.filter { $0.parentSlipbox == nil }) { slipbox in
-                    listItemView(for: slipbox)
+                    SlipboxRowView(slipbox: slipbox)
                         .contextMenu {
                             Button("Edit \(slipbox.name)", systemImage: "pencil") {
                                 viewModel.controlModels.slipboxToOpen = slipbox
@@ -139,15 +139,12 @@ extension MainView {
                         .matchedTransitionSource(id: slipbox.id, in: slipboxNamespace)
                 }
             } label: {
-                Label("Root slipbox", systemImage: "folder")
+                Label("Root", systemImage: "folder")
             }
             .tag(SidebarSelection.root)
             .contentShape(Rectangle())
         }
-    }
-    
-    private func listItemView(for slipbox: Slipbox) -> some View {
-        SlipboxRowView(slipbox: slipbox)
+        .navigationTitle("Slipboxes")
     }
     
     private var fullViewBody: some View {
@@ -158,7 +155,7 @@ extension MainView {
                     buildContentBodyWithModifiers(in: geometry)
                 }
                 .sheet(item: bindableViewModel.controlModels.noteToOpen) { note in
-                    NoteView(note)
+                    NoteView(note, isBeingCreated: viewModel.controlModels.isBeingCreated)
                         .presentationSizing(.page)
                         .navigationTransition(.zoom(sourceID: note.id, in: noteNamespace))
                         .environment(viewModel)

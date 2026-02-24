@@ -19,8 +19,17 @@ class MainViewModel {
     // MARK: - ControlModels
     struct ControlModels {
         // MARK: - Selection
-        var noteToOpen: Note?
-        var noteToDelete: Note?
+        var noteToOpen: Note? {
+            didSet {
+                isBeingCreated = false
+            }
+        }
+        var noteToDelete: Note? {
+            didSet {
+                isBeingCreated = false
+            }
+        }
+        var isBeingCreated: Bool = false
         
         var slipboxToOpen: Slipbox?
         var slipboxToDelete: Slipbox?
@@ -299,6 +308,7 @@ class MainViewModel {
         createAndSaveToModelContext(note)
         if shouldAutoOpen {
             controlModels.noteToOpen = note
+            controlModels.isBeingCreated = true
         }
         return note
     }
@@ -394,7 +404,7 @@ class MainViewModel {
     func onFilterTagTapped(_ tag: Tag) {
         withAnimation {
             if controlModels.filterTags.contains(tag) {
-                controlModels.filterTags.removeAll(where: { $0 === tag })
+                controlModels.filterTags.removeAll(where: { $0 == tag })
             } else {
                 controlModels.filterTags.append(tag)
             }
@@ -412,7 +422,7 @@ class MainViewModel {
     // MARK: - Auxiliary methods
     /// Helper function that verifies if a note is inside a slipbox or its child-slipboxes.
     private func isNoteInSlipbox(_ note: Note, slipbox: Slipbox) -> Bool {
-        if note.slipbox === slipbox { return true }
+        if note.slipbox == slipbox { return true }
         
         for childSlipbox in slipbox.slipboxes {
             if isNoteInSlipbox(note, slipbox: childSlipbox) {

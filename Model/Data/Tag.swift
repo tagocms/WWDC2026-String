@@ -31,6 +31,12 @@ extension Tag: Comparable {
     }
 }
 
+extension Tag: Equatable {
+    static func == (lhs: Tag, rhs: Tag) -> Bool {
+        lhs.id == rhs.id
+    }
+}
+
 extension Tag: AutoFormatable {
     /// Variable used to standardize tag formatting
     var formatName: String {

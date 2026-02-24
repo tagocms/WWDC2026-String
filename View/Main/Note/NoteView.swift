@@ -25,6 +25,8 @@ struct NoteView: View {
     @State private var viewModel: NoteViewModel!
     
     // MARK: - UI State
+    @State private var isBeingCreated: Bool
+    @State private var nameTextFieldSelection: TextSelection?
     @State private var isAlertPresented: Bool = false
     @FocusState private var focusState: NoteViewFocusState?
     
@@ -59,19 +61,34 @@ struct NoteView: View {
                 viewModel = NoteViewModel(modelContext, note: note)
             }
         }
+        .onAppear {
+            if isBeingCreated {
+                focusState = .name
+            }
+        }
+        .onChange(of: focusState) { _, newValue in
+            guard let viewModel else { return }
+            guard !viewModel.selectedNoteName.isEmpty,
+                  newValue == .name,
+                    isBeingCreated else { return }
+            nameTextFieldSelection = TextSelection(
+                range: viewModel.selectedNoteName.startIndex..<viewModel.selectedNoteName.endIndex
+            )
+            isBeingCreated = false
+        }
     }
     
     // MARK: - View components
     private func buildForm(_ bindableViewModel: Bindable<NoteViewModel>) -> some View {
         Form {
             Section("Header") {
-                TextField("Name", text: bindableViewModel.selectedNoteName)
+                TextField("Name", text: bindableViewModel.selectedNoteName, selection: $nameTextFieldSelection)
                     .font(.title.bold())
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
                     .focused($focusState, equals: .name)
                 
-                Picker("Parent Slipbox", selection: bindableViewModel.selectedNoteParentSlipbox) {
+                Picker("Slipbox", selection: bindableViewModel.selectedNoteParentSlipbox) {
                     ForEach(viewModel.slipboxes.sorted()) { possibleParent in
                         Text(possibleParent.name)
                             .tag(possibleParent)
@@ -97,6 +114,7 @@ struct NoteView: View {
                 }
             }
         }
+        .scrollIndicators(.hidden)
     }
     
     @ViewBuilder
@@ -132,8 +150,9 @@ struct NoteView: View {
     }
     
     // MARK: - Initializer
-    init(_ note: Note) {
+    init(_ note: Note, isBeingCreated: Bool = false) {
         self._note = Bindable(note)
+        self._isBeingCreated = State(initialValue: isBeingCreated)
     }
     
     // MARK: - Auxiliary functions
