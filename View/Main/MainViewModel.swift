@@ -48,6 +48,7 @@ class MainViewModel {
             }
         }
     }
+    var isRootSlipboxExpanded: Bool = true
     
     // MARK: - Model arrays
     var notes: [Note] {
@@ -404,7 +405,7 @@ class MainViewModel {
     func filterForSlipbox(_ slipbox: Slipbox? = nil) {
         withAnimation {
             controlModels.filterSlipbox = slipbox
-//            navigationSplitViewVisibility = .detailOnly
+            navigationSplitViewVisibility = .detailOnly
         }
     }
     

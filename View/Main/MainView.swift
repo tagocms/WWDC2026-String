@@ -124,7 +124,7 @@ extension MainView {
 extension MainView {
     private func sidebarViewBody(_ bindableViewModel: Bindable<MainViewModel>) -> some View {
         List(selection: bindableViewModel.sidebarSelection) {
-            DisclosureGroup {
+            DisclosureGroup(isExpanded: bindableViewModel.isRootSlipboxExpanded) {
                 ForEach(slipboxesFromQuery.filter { $0.parentSlipbox == nil }) { slipbox in
                     listItemView(for: slipbox)
                         .contextMenu {
