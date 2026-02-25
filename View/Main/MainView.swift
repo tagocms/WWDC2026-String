@@ -70,7 +70,7 @@ struct MainView: View {
     // MARK: - View Body
     var body: some View {
         Group {
-            if let viewModel {
+            if let viewModel, viewModel.controlModels.isLoaded {
                 let bindableViewModel = Bindable(viewModel)
                 NavigationSplitView(columnVisibility: bindableViewModel.navigationSplitViewVisibility) {
                     sidebarViewBody(bindableViewModel)
@@ -85,6 +85,7 @@ struct MainView: View {
             if viewModel == nil {
                 viewModel = MainViewModel(modelContext)
                 viewModel.buildInitialData()
+                viewModel.loadView()
             }
         }
         .onOpenURL { url in

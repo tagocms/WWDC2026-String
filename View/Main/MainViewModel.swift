@@ -18,6 +18,9 @@ class MainViewModel {
     
     // MARK: - ControlModels
     struct ControlModels {
+        // MARK: - Initialization
+        var isLoaded = false
+        
         // MARK: - Selection
         var noteToOpen: Note? {
             didSet {
@@ -119,6 +122,43 @@ class MainViewModel {
     // MARK: - Initializer functions
     init(_ modelContext: ModelContext) {
         self.modelContext = modelContext
+    }
+    
+    /// Loads and updates all custom attributes (links and tags) in each note's content body.
+    func loadView() {
+        
+        
+        for note in notes {
+            Note.applyChangesFromContentBodyToNotesAndAlterContentBody(
+                note,
+                oldFormattedName: note.formatName,
+                allNotes: notes
+            ) { noteToCheck, alteredItem in
+                !noteToCheck.linkedNotes.contains(alteredItem)
+            } changesToMake: { noteToCheck, itemToApply in
+                var linkedNotes = noteToCheck.linkedNotes
+                linkedNotes.append(itemToApply)
+                noteToCheck.setLinkedNotes(linkedNotes)
+            } shouldItemBeCheckedForAlteringText: { noteToCheck, alteredItem in
+                noteToCheck.linkedNotes.contains(alteredItem)
+            }
+        }
+        for tag in tags {
+            Note.applyChangesFromContentBodyToNotesAndAlterContentBody(
+                tag,
+                oldFormattedName: tag.formatName,
+                allNotes: notes
+            ) { noteToCheck, alteredItem in
+                !noteToCheck.tags.contains(alteredItem)
+            } changesToMake: { noteToCheck, itemToApply in
+                var tags = noteToCheck.tags
+                tags.append(itemToApply)
+                noteToCheck.setTags(tags)
+            } shouldItemBeCheckedForAlteringText: { noteToCheck, alteredItem in
+                noteToCheck.tags.contains(alteredItem)
+            }
+        }
+        controlModels.isLoaded = true
     }
     
     // MARK: - On receive URL callback
@@ -272,9 +312,9 @@ class MainViewModel {
                 position: Position(x: 1000, y: -750),
             )
             
-            welcomeNote.setLinkedNotes([nextNote])
-            finalTutorialNote.setLinkedNotes([zettelkastenTutorialNote])
-            zettelkastenTutorialNote.setLinkedNotes([luhmannNote, fleetingNote, literatureNote, permanentNote])
+//            welcomeNote.setLinkedNotes([nextNote])
+//            finalTutorialNote.setLinkedNotes([zettelkastenTutorialNote])
+//            zettelkastenTutorialNote.setLinkedNotes([luhmannNote, fleetingNote, literatureNote, permanentNote])
             
             let notesToInsert: [Note] = [
                 welcomeNote,
