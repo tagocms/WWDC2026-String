@@ -51,10 +51,18 @@ struct SlipboxView: View {
         .onChange(of: isFocused) { _, newValue in
             guard let viewModel else { return }
             guard !viewModel.selectedSlipboxName.isEmpty, isBeingCreated else { return }
+            // Selects the name text for newly created slipboxes
             nameTextFieldSelection = TextSelection(
                 range: viewModel.selectedSlipboxName.startIndex..<viewModel.selectedSlipboxName.endIndex
             )
             isBeingCreated = false
+        }
+        .onChange(of: isFocused) { oldValue, newValue in
+            guard let viewModel else { return }
+            // Cleans the text for selected slipbox's name
+            if oldValue, !newValue {
+                viewModel.selectedSlipboxName = viewModel.selectedSlipboxName.trimmingCharacters(in: .whitespacesAndNewlines)
+            }
         }
     }
     
@@ -72,6 +80,7 @@ struct SlipboxView: View {
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
                     .focused($isFocused)
+                    .submitLabel(.done)
                 Picker("Parent Slipbox", selection: bindableViewModel.selectedSlipboxParentSlipbox) {
                     Text("Root")
                         .tag(nil as Slipbox?)

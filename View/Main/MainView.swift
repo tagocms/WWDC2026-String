@@ -159,14 +159,17 @@ extension MainView {
                         .presentationSizing(.page)
                         .navigationTransition(.zoom(sourceID: note.id, in: noteNamespace))
                         .environment(viewModel)
+                        .scrollBounceBehavior(.basedOnSize)
                 }
                 .sheet(item: bindableViewModel.controlModels.slipboxToOpen) { slipbox in
                     SlipboxView(slipbox, isBeingCreated: viewModel.controlModels.isBeingCreated)
                         .navigationTransition(.zoom(sourceID: slipbox.id, in: slipboxNamespace))
+                        .scrollBounceBehavior(.basedOnSize)
                 }
                 .sheet(isPresented: $isShowingSettings) {
                     SettingsView()
                         .navigationTransition(.zoom(sourceID: "settings", in: defaultNamespace))
+                        .scrollBounceBehavior(.basedOnSize)
                 }
                 .alert(viewModel.alertTitle, isPresented: $isAlertPresented) {
                     viewModel.buildAlertActions()
@@ -185,7 +188,10 @@ extension MainView {
                 }
                 .matchedTransitionSource(id: "settings", in: defaultNamespace)
             }
-            ToolbarItem {
+
+            ToolbarItemGroup(placement: .primaryAction) {
+                createNewNoteAndSlipboxButtons
+                filterMenuButton
                 Button {
                     isInExploringMode.toggle()
                 } label: {
@@ -196,13 +202,10 @@ extension MainView {
                     }
                 }
             }
-            ToolbarItemGroup(placement: .bottomBar) {
-                createNewNoteAndSlipboxButtons
-                filterMenuButton
-            }
         }
-        .searchable(text: $searchText, placement: .toolbar, prompt: "Search notes")
+        .searchable(text: $searchText, placement: .automatic, prompt: "Search notes")
         .searchFocused($isSearchFocused)
+        .searchToolbarBehavior(.minimize)
         .searchSuggestions {
             ForEach(Note.filtered(notesFromQuery, by: searchText).prefix(8)) { item in
                 Label(item.name, systemImage: "document")

@@ -17,18 +17,43 @@ extension AutoFormatable {
         oldFormattedName: String,
         allNotes: [Note],
         shouldDelete: Bool = false,
-        attributes: AttributeContainer,
         shouldItemBeChecked: (_ noteToCheck: Note, _ alteredItem: T) -> Bool
     ) {
         for note in allNotes {
-            guard shouldItemBeChecked(note, alteredItem) else { continue }
-            var body = note.contentBody
-            let targets = body.characters.ranges(of: AttributedString(oldFormattedName).characters)
-            for range in targets.reversed() {
-                let replacement = AttributedString(shouldDelete ? "" : alteredItem.formatName, attributes: attributes)
-                body.replaceSubrange(range, with: replacement)
+            do {
+                try alterTextInContentBody(
+                    alteredItem,
+                    for: note,
+                    oldFormattedName: oldFormattedName,
+                    shouldDelete: shouldDelete,
+                    shouldItemBeChecked: shouldItemBeChecked
+                )
+            } catch {
+                continue
             }
-            note.setContent(body)
         }
     }
+    
+    static func alterTextInContentBody<T: AutoFormatable & Identifiable>(
+        _ alteredItem: T,
+        for note: Note,
+        oldFormattedName: String,
+        shouldDelete: Bool = false,
+        shouldItemBeChecked: (_ noteToCheck: Note, _ alteredItem: T) -> Bool
+    ) throws {
+        guard shouldItemBeChecked(note, alteredItem) else {
+            throw AutoFormatableError.itemShouldNotBeChecked("Item \(note.name) shouldn't be checked.")
+        }
+        var body = note.contentBody
+        let targets: [Range<AttributedString.Index>] = String.ranges(of: AttributedString(oldFormattedName), in: body)
+        for range in targets.reversed() {
+            body.characters.replaceSubrange(range, with: alteredItem.formatName)
+        }
+        note.setContent(body)
+    }
+}
+
+enum AutoFormatableError: Error {
+    case itemNotFound(String)
+    case itemShouldNotBeChecked(String)
 }

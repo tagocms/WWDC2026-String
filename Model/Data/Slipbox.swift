@@ -68,7 +68,7 @@ extension Slipbox: StandardFetchable {
 // MARK: - Setter methods
 extension Slipbox {
     func setName(_ name: String, allSlipboxes: [Slipbox]) {
-        let newName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let newName = String(name.trimmingPrefix(" "))
         if isNameForSelfValid(newName, allSlipboxes: allSlipboxes) {
             self.name = newName
             self.dateLastUpdated = .now

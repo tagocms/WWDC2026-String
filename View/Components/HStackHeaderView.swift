@@ -94,6 +94,7 @@ struct HStackHeaderView<T: Hashable & Identifiable & Named & Comparable>: View {
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
                 .focused($isFocused)
+                .submitLabel(.done)
         }
         .padding(.horizontal, standardSpacingAndPadding)
         .padding(.vertical, standardSpacingAndPadding / 2)

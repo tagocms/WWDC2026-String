@@ -39,22 +39,22 @@ struct NoteView: View {
             if let viewModel {
                 let bindableViewModel = Bindable(viewModel)
                 buildForm(bindableViewModel)
-                .onAppear {
-                    applyChangesToAttributedText()
-                }
-                .onChange(of: viewModel.selectedNoteContentBody) {
-                    applyChangesToAttributedText()
-                }
-                .onChange(of: viewModel.selectedNoteName) {
-                    applyChangesToAttributedText()
-                }
-                .alert(viewModel.alertTitle, isPresented: $isAlertPresented) {
-                    viewModel.buildAlertActions {
-                        dismiss()
+                    .onAppear {
+                        applyChangesToAttributedText()
                     }
-                } message: {
-                    Text(viewModel.alertMessage)
-                }
+                    .onChange(of: viewModel.selectedNoteContentBody) {
+                        applyChangesToAttributedText()
+                    }
+                    .onChange(of: viewModel.selectedNoteName) {
+                        applyChangesToAttributedText()
+                    }
+                    .alert(viewModel.alertTitle, isPresented: $isAlertPresented) {
+                        viewModel.buildAlertActions {
+                            dismiss()
+                        }
+                    } message: {
+                        Text(viewModel.alertMessage)
+                    }
             } else {
                 ProgressView().font(.largeTitle)
             }
@@ -73,11 +73,19 @@ struct NoteView: View {
             guard let viewModel else { return }
             guard !viewModel.selectedNoteName.isEmpty,
                   newValue == .name,
-                    isBeingCreated else { return }
+                  isBeingCreated else { return }
+            // Selects the name text for newly created notes
             nameTextFieldSelection = TextSelection(
                 range: viewModel.selectedNoteName.startIndex..<viewModel.selectedNoteName.endIndex
             )
             isBeingCreated = false
+        }
+        .onChange(of: focusState) { oldValue, newValue in
+            guard let viewModel else { return }
+            // Cleans the text for selected note's name
+            if oldValue == .name, newValue != .name {
+                viewModel.selectedNoteName = viewModel.selectedNoteName.trimmingCharacters(in: .whitespacesAndNewlines)
+            }
         }
     }
     
@@ -90,6 +98,7 @@ struct NoteView: View {
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
                     .focused($focusState, equals: .name)
+                    .submitLabel(.done)
                 
                 Picker("Slipbox", selection: bindableViewModel.selectedNoteParentSlipbox) {
                     ForEach(viewModel.slipboxes.sorted()) { possibleParent in
@@ -159,13 +168,14 @@ struct NoteView: View {
     }
     
     // MARK: - Auxiliary functions
+    /// Looks for and finds instances of text that match tag and linked note syntax and adds attributes to the text runs.
     private func applyChangesToAttributedText() {
         // LinkedNotes
         let notesToLinkTitles: [UUID: AttributedString] = Dictionary(uniqueKeysWithValues: viewModel.notes.map { ($0.id, AttributedString($0.formatName)) })
         var notesToLinkRanges: [UUID: RangeSet<AttributedString.Index>] = [:]
         
         for noteToLink in notesToLinkTitles {
-            notesToLinkRanges[noteToLink.key] = RangeSet(viewModel.selectedNoteContentBody.characters.ranges(of: noteToLink.value.characters))
+            notesToLinkRanges[noteToLink.key] = String.ranges(of: noteToLink.value, in: viewModel.selectedNoteContentBody)
         }
         
         for rangeSet in notesToLinkRanges {
@@ -174,6 +184,11 @@ struct NoteView: View {
                 continue
             }
             viewModel.selectedNoteContentBody.transform(updating: &contentFieldSelection) { attributedText in
+                let ranges = rangeSet.value.ranges.map { $0 }
+                for range in ranges {
+                    attributedText.characters.replaceSubrange(range, with: noteToLink.formatName)
+                }
+                
                 attributedText[rangeSet.value].linkedNote = rangeSet.key
                 if !viewModel.selectedNoteLinkedNotes.contains(noteToLink) {
                     viewModel.selectedNoteLinkedNotes.append(noteToLink)
@@ -186,7 +201,7 @@ struct NoteView: View {
         var tagRanges: [UUID: RangeSet<AttributedString.Index>] = [:]
         
         for tagTitle in tagTitles {
-            tagRanges[tagTitle.key] = RangeSet(viewModel.selectedNoteContentBody.characters.ranges(of: tagTitle.value.characters))
+            tagRanges[tagTitle.key] = String.ranges(of: tagTitle.value, in: viewModel.selectedNoteContentBody)
         }
         
         for rangeSet in tagRanges {
@@ -195,7 +210,12 @@ struct NoteView: View {
                 continue
             }
             viewModel.selectedNoteContentBody.transform(updating: &contentFieldSelection) { attributedText in
-                attributedText[rangeSet.value].linkedNote = rangeSet.key
+                let ranges = rangeSet.value.ranges.map { $0 }
+                for range in ranges {
+                    attributedText.characters.replaceSubrange(range, with: tag.formatName)
+                }
+                
+                attributedText[rangeSet.value].tag = rangeSet.key
                 if !viewModel.selectedNoteTags.contains(tag) {
                     viewModel.selectedNoteTags.append(tag)
                 }

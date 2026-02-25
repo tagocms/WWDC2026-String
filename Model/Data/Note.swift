@@ -102,14 +102,12 @@ extension Note {
     
     /// Sets the name for a note and updates other notes' references to the old name inside their content body to the new name.
     func setNameAndUpdateAllNotes(_ name: String, allNotes: [Note]) {
-        let newName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let newName = String(name.trimmingPrefix(" "))
         if isNameForSelfValid(newName, allNotes: allNotes) {
             let oldName = self.formatName
             self.name = newName
             
-            var container = AttributeContainer()
-            container.linkedNote = self.id
-            Note.alterTextInContentBodyForAllNotes(self, oldFormattedName: oldName, allNotes: allNotes, attributes: container) { noteToCheck, alteredItem in
+            Note.alterTextInContentBodyForAllNotes(self, oldFormattedName: oldName, allNotes: allNotes) { noteToCheck, alteredItem in
                 noteToCheck.linkedNotes.contains(alteredItem)
             }
             
