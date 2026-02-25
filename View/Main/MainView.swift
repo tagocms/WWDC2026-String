@@ -185,6 +185,21 @@ extension MainView {
                 }
                 .matchedTransitionSource(id: "settings", in: defaultNamespace)
             }
+            ToolbarItem {
+                Button {
+                    isInExploringMode.toggle()
+                } label: {
+                    if isInExploringMode {
+                        Label("Exploring mode", systemImage: "hand.draw")
+                    } else {
+                        Label("Linking mode", systemImage: "link")
+                    }
+                }
+            }
+            ToolbarItemGroup(placement: .bottomBar) {
+                createNewNoteAndSlipboxButtons
+                filterMenuButton
+            }
         }
         .searchable(text: $searchText, placement: .toolbar, prompt: "Search notes")
         .searchFocused($isSearchFocused)
@@ -204,54 +219,18 @@ extension MainView {
         }
     }
     
-    private var exploringModeButton: some View {
-        Button {
-            isInExploringMode.toggle()
-        } label: {
-            if isInExploringMode {
-                IconAndTextView(iconName: "hand.draw", text: "Explore mode")
-            } else {
-                IconAndTextView(iconName: "link", text: "Link mode")
-            }
-        }
-        .padding()
-    }
-    
-    @ViewBuilder
-    private var dockBar: some View {
-        HStack(alignment: .dockBarLastTextBaseline) {
-            fixedDockBarButtons
-                .alignmentGuide(VerticalAlignment.dockBarLastTextBaseline) { dimension in
-                    dimension[VerticalAlignment.bottom]
-                }
-        }
-        .padding()
-        .background(.ultraThinMaterial)
-        .clipShape(.buttonBorder)
-        .padding()
-        .zIndex(Constants.dockBarZIndex)
-    }
-    
-    @ViewBuilder
-    private var fixedDockBarButtons: some View {
-        HStack(alignment: .dockBarLastTextBaseline, spacing: Constants.dockBarSpacing) {
-            createNewNoteAndSlipboxButtons
-            filterMenuButton
-        }
-    }
-    
     @ViewBuilder
     private var createNewNoteAndSlipboxButtons: some View {
         Button {
             viewModel.createNewNote()
         } label: {
-            IconAndTextView(iconName: "document.badge.plus", text: "New note")
+            Label("New note", systemImage: "document.badge.plus")
         }
         
         Button {
             viewModel.createNewSlipbox()
         } label: {
-            IconAndTextView(iconName: "folder.badge.plus", text: "New slipbox")
+            Label("New slipbox", systemImage: "folder.badge.plus")
         }
     }
     
@@ -270,7 +249,7 @@ extension MainView {
             }
             .menuActionDismissBehavior(.disabled)
         } label: {
-            IconAndTextView(iconName: "line.3.horizontal.decrease", text: "Filter")
+            Label("Filter", systemImage: "line.3.horizontal.decrease")
         }
     }
     
@@ -279,7 +258,6 @@ extension MainView {
         Group {
             ZStack(alignment: .topTrailing) {
                 buildContentBody(in: geometry)
-                exploringModeButton
             }
         }
         .onChange(of: viewModel.controlModels.filterSlipbox) {
@@ -314,13 +292,11 @@ extension MainView {
             .rotationEffect(totalRotation, anchor: .center)
             .offset(totalPanDistance)
             
-            dockBar
-            
             if viewModel.filteredNotes(notesFromQuery).isEmpty {
                 Button {
                     viewModel.createNewNote()
                 } label: {
-                    ContentUnavailableView("No notes found", systemImage: "document.badge.plus", description: Text("There are no notes in this slipbox. Create a new one!"))
+                    ContentUnavailableView("No notes found", systemImage: "document.badge.plus", description: Text("There are no notes in this slipbox and/or filter. Create a new one!"))
                         .scaleEffect(1.5)
                 }
             }

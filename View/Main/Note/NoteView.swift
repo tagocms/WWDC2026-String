@@ -27,8 +27,11 @@ struct NoteView: View {
     // MARK: - UI State
     @State private var isBeingCreated: Bool
     @State private var nameTextFieldSelection: TextSelection?
-    @State private var isAlertPresented: Bool = false
+    @State private var contentFieldSelection: AttributedTextSelection = AttributedTextSelection()
+    
     @FocusState private var focusState: NoteViewFocusState?
+    
+    @State private var isAlertPresented: Bool = false
     
     // MARK: - View
     var body: some View {
@@ -100,11 +103,11 @@ struct NoteView: View {
             }
             
             Section("Note Content") {
-                TextEditor(text: bindableViewModel.selectedNoteContentBody)
+                TextEditor(text: bindableViewModel.selectedNoteContentBody, selection: $contentFieldSelection)
                     .attributedTextFormattingDefinition(NoteFormattingDefinition())
                     .autocorrectionDisabled()
                     .textInputAutocapitalization(.never)
-                    .frame(height: 800)
+                    .frame(height: UIScreen.main.bounds.height * 0.4)
             }
             
             Section {
@@ -170,9 +173,11 @@ struct NoteView: View {
                   !rangeSet.value.isEmpty else {
                 continue
             }
-            viewModel.selectedNoteContentBody[rangeSet.value].linkedNote = rangeSet.key
-            if !viewModel.selectedNoteLinkedNotes.contains(noteToLink) {
-                viewModel.selectedNoteLinkedNotes.append(noteToLink)
+            viewModel.selectedNoteContentBody.transform(updating: &contentFieldSelection) { attributedText in
+                attributedText[rangeSet.value].linkedNote = rangeSet.key
+                if !viewModel.selectedNoteLinkedNotes.contains(noteToLink) {
+                    viewModel.selectedNoteLinkedNotes.append(noteToLink)
+                }
             }
         }
         
@@ -189,9 +194,11 @@ struct NoteView: View {
                   !rangeSet.value.isEmpty else {
                 continue
             }
-            viewModel.selectedNoteContentBody[rangeSet.value].tag = rangeSet.key
-            if !viewModel.selectedNoteTags.contains(tag) {
-                viewModel.selectedNoteTags.append(tag)
+            viewModel.selectedNoteContentBody.transform(updating: &contentFieldSelection) { attributedText in
+                attributedText[rangeSet.value].linkedNote = rangeSet.key
+                if !viewModel.selectedNoteTags.contains(tag) {
+                    viewModel.selectedNoteTags.append(tag)
+                }
             }
         }
     }

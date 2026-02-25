@@ -62,8 +62,8 @@
             filePath = "View/Main/MainView.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "440"
-            endingLineNumber = "440"
+            startingLineNumber = "416"
+            endingLineNumber = "416"
             landmarkName = "MainView"
             landmarkType = "21">
          </BreakpointContent>
@@ -78,8 +78,8 @@
             filePath = "View/Main/MainView.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "471"
-            endingLineNumber = "471"
+            startingLineNumber = "447"
+            endingLineNumber = "447"
             landmarkName = "zoomToFit(in:)"
             landmarkType = "7">
          </BreakpointContent>
