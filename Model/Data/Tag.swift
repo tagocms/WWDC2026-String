@@ -54,7 +54,7 @@ extension Tag: StandardFetchable {
 extension Tag {
     static func isNameValid(_ tagName: String, allTags: [Tag]) -> Bool {
         for tag in allTags {
-            if tag.name == tagName {
+            if tag.name.lowercased() == tagName.lowercased() {
                 return false
             }
         }

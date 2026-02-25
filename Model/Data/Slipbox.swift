@@ -97,7 +97,7 @@ extension Slipbox {
     func isNameForSelfValid(_ name: String, allSlipboxes: [Slipbox]) -> Bool {
         for slipbox in allSlipboxes {
             if slipbox != self {
-                if slipbox.name == name {
+                if slipbox.name.lowercased() == name.lowercased() {
                     return false
                 }
             }

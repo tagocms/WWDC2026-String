@@ -57,6 +57,19 @@ struct HStackHeaderView<T: Hashable & Identifiable & Named & Comparable>: View {
             }
         }
         .buttonStyle(.plain)
+        .onSubmit(of: .text) {
+            if isAllowedToCreate() {
+                onCreate()
+            } else {
+                guard let filteredItem = filteredItems.first, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                    return
+                }
+                withAnimation {
+                    collection.append(filteredItem)
+                    text = ""
+                }
+            }
+        }
     }
     
     // MARK: - Initializer

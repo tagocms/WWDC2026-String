@@ -156,7 +156,7 @@ extension Note {
     
     static func isNewNameValid(_ name: String, allNotes: [Note]) -> Bool {
         for note in allNotes {
-            if note.name == name {
+            if note.name.lowercased() == name.lowercased() {
                 return false
             }
         }
