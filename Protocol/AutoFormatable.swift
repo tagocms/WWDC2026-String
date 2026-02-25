@@ -13,32 +13,32 @@ protocol AutoFormatable {
 
 extension AutoFormatable {
     /// For all notes, check if there is a desynchronization between its content body and its properties (links and tags) and, if there is, corrects it and applies changes to their properties and to the text itself, if necessary (i.e. if the text is lowercased but the name of the item to apply is in uppercase).
-    static func applyChangesFromContentBodyToNotesAndAlterContentBody<T: AutoFormatable & Identifiable>(
+    static func synchronizeContentBody<T: AutoFormatable & Identifiable>(
         _ itemToApply: T,
         oldFormattedName: String,
         allNotes: [Note],
         shouldDelete: Bool = false,
-        shouldItemBeCheckedForChanges: (
+        shouldApply: (
             _ noteToCheck: Note,
             _ itemToApply: T
         ) -> Bool,
-        changesToMake: (
+        applyChange: (
             _ noteToCheck: Note,
             _ itemToApply: T
         ) -> Void,
-        shouldItemBeCheckedForAlteringText: (
+        shouldAlterText: (
             _ noteToCheck: Note,
             _ alteredItem: T
         ) -> Bool
     ) {
         for note in allNotes {
             do {
-                try applyChangesToNoteFromContentBody(itemToApply, note: note, shouldItemBeChecked: shouldItemBeCheckedForChanges, changesToMake: changesToMake)
+                try applyChangesToNoteFromContentBody(itemToApply, note: note, shouldItemBeChecked: shouldApply, changesToMake: applyChange)
                 try alterTextInContentBody(
                     itemToApply,
                     for: note,
                     oldFormattedName: oldFormattedName,
-                    shouldItemBeChecked: shouldItemBeCheckedForAlteringText
+                    shouldItemBeChecked: shouldAlterText
                 )
             } catch {
                 continue

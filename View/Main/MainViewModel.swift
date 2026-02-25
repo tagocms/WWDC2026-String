@@ -126,39 +126,44 @@ class MainViewModel {
     
     /// Loads and updates all custom attributes (links and tags) in each note's content body.
     func loadView() {
-        
-        
         for note in notes {
-            Note.applyChangesFromContentBodyToNotesAndAlterContentBody(
-                note,
-                oldFormattedName: note.formatName,
-                allNotes: notes
+            synchronizeContentBody(for: note)
+        }
+        controlModels.isLoaded = true
+    }
+    
+    /// Synchronizes each note's content body with their properties (links and tags)
+    private func synchronizeContentBody(for note: Note) {
+        for linkedNote in notes {
+            Note.synchronizeContentBody(
+                linkedNote,
+                oldFormattedName: linkedNote.formatName,
+                allNotes: [note]
             ) { noteToCheck, alteredItem in
                 !noteToCheck.linkedNotes.contains(alteredItem)
-            } changesToMake: { noteToCheck, itemToApply in
-                var linkedNotes = noteToCheck.linkedNotes
-                linkedNotes.append(itemToApply)
-                noteToCheck.setLinkedNotes(linkedNotes)
-            } shouldItemBeCheckedForAlteringText: { noteToCheck, alteredItem in
+            } applyChange: { noteToCheck, itemToApply in
+                var updatedLinkedNotes = noteToCheck.linkedNotes
+                updatedLinkedNotes.append(itemToApply)
+                noteToCheck.setLinkedNotes(updatedLinkedNotes)
+            } shouldAlterText: { noteToCheck, alteredItem in
                 noteToCheck.linkedNotes.contains(alteredItem)
             }
         }
         for tag in tags {
-            Note.applyChangesFromContentBodyToNotesAndAlterContentBody(
+            Note.synchronizeContentBody(
                 tag,
                 oldFormattedName: tag.formatName,
-                allNotes: notes
+                allNotes: [note]
             ) { noteToCheck, alteredItem in
                 !noteToCheck.tags.contains(alteredItem)
-            } changesToMake: { noteToCheck, itemToApply in
-                var tags = noteToCheck.tags
-                tags.append(itemToApply)
-                noteToCheck.setTags(tags)
-            } shouldItemBeCheckedForAlteringText: { noteToCheck, alteredItem in
+            } applyChange: { noteToCheck, itemToApply in
+                var updatedTags = noteToCheck.tags
+                updatedTags.append(itemToApply)
+                noteToCheck.setTags(updatedTags)
+            } shouldAlterText: { noteToCheck, alteredItem in
                 noteToCheck.tags.contains(alteredItem)
             }
         }
-        controlModels.isLoaded = true
     }
     
     // MARK: - On receive URL callback
@@ -206,7 +211,7 @@ class MainViewModel {
             )
             
             let nextNote = Note(
-                tags: [tutorialTag],
+                tags: [],
                 slipbox: welcomeSlipbox,
                 title: "Next Note",
                 contentBody: AttributedString(
@@ -311,10 +316,6 @@ class MainViewModel {
                 ),
                 position: Position(x: 1000, y: -750),
             )
-            
-//            welcomeNote.setLinkedNotes([nextNote])
-//            finalTutorialNote.setLinkedNotes([zettelkastenTutorialNote])
-//            zettelkastenTutorialNote.setLinkedNotes([luhmannNote, fleetingNote, literatureNote, permanentNote])
             
             let notesToInsert: [Note] = [
                 welcomeNote,
