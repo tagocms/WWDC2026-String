@@ -161,7 +161,7 @@ extension MainView {
                         .environment(viewModel)
                 }
                 .sheet(item: bindableViewModel.controlModels.slipboxToOpen) { slipbox in
-                    SlipboxView(slipbox)
+                    SlipboxView(slipbox, isBeingCreated: viewModel.controlModels.isBeingCreated)
                         .navigationTransition(.zoom(sourceID: slipbox.id, in: slipboxNamespace))
                 }
                 .sheet(isPresented: $isShowingSettings) {

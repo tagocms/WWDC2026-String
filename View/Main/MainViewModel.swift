@@ -30,9 +30,16 @@ class MainViewModel {
             }
         }
         var isBeingCreated: Bool = false
-        
-        var slipboxToOpen: Slipbox?
-        var slipboxToDelete: Slipbox?
+        var slipboxToOpen: Slipbox? {
+            didSet {
+                isBeingCreated = false
+            }
+        }
+        var slipboxToDelete: Slipbox? {
+            didSet {
+                isBeingCreated = false
+            }
+        }
         
         // MARK: - Filters
         var filterTags: [Tag] = []
@@ -336,6 +343,7 @@ class MainViewModel {
         createAndSaveToModelContext(slipbox)
         
         controlModels.slipboxToOpen = slipbox
+        controlModels.isBeingCreated = true
         
         return slipbox
     }

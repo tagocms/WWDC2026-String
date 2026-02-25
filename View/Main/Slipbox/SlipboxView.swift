@@ -18,7 +18,10 @@ struct SlipboxView: View {
     @State private var viewModel: SlipboxViewModel!
     
     // MARK: - UI State
+    @State private var isBeingCreated: Bool = false
     @State private var isAlertPresented: Bool = false
+    @FocusState private var isFocused: Bool
+    @State private var nameTextFieldSelection: TextSelection?
     
     // MARK: - View
     var body: some View {
@@ -40,22 +43,35 @@ struct SlipboxView: View {
         .task {
             if viewModel == nil {
                 viewModel = SlipboxViewModel(modelContext, slipbox: slipbox)
+                if isBeingCreated {
+                    isFocused = true
+                }
             }
+        }
+        .onChange(of: isFocused) { _, newValue in
+            guard let viewModel else { return }
+            guard !viewModel.selectedSlipboxName.isEmpty, isBeingCreated else { return }
+            nameTextFieldSelection = TextSelection(
+                range: viewModel.selectedSlipboxName.startIndex..<viewModel.selectedSlipboxName.endIndex
+            )
+            isBeingCreated = false
         }
     }
     
     // MARK: - Initializer
-    init(_ slipbox: Slipbox) {
+    init(_ slipbox: Slipbox, isBeingCreated: Bool = false) {
         self._slipbox = Bindable(slipbox)
+        self._isBeingCreated = State(initialValue: isBeingCreated)
     }
     
     // MARK: - Builder methods
     private func buildForm(with bindableViewModel: Bindable<SlipboxViewModel>) -> some View {
         Form {
             Section("Slipbox") {
-                TextField("Name", text: bindableViewModel.selectedSlipboxName)
+                TextField("Name", text: bindableViewModel.selectedSlipboxName, selection: $nameTextFieldSelection)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
+                    .focused($isFocused)
                 Picker("Parent Slipbox", selection: bindableViewModel.selectedSlipboxParentSlipbox) {
                     Text("Root")
                         .tag(nil as Slipbox?)
