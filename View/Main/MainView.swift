@@ -29,12 +29,13 @@ struct MainView: View {
         static let dockBarSpacing: CGFloat = 12
         
         static let noteWidth: CGFloat = 150
-        static let aspectRatio: CGFloat = 3/4
+        static let aspectRatio: CGFloat = 1
         static let cardZIndex: Double = 999
         static let cardSize: CGSize = CGSize(
             width: Constants.noteWidth,
             height: Constants.noteWidth / Constants.aspectRatio
         )
+        static let dragScale: CGFloat = 1.3
         
         static let linkLineZIndex: Double = 0
     }
@@ -42,6 +43,9 @@ struct MainView: View {
     // MARK: - View UI State
     @State private var searchText = ""
     @FocusState private var isSearchFocused: Bool
+    
+    @State private var draggedNote: Note? = nil
+    @State private var dragDestination: Note? = nil
     
     @State private var scaleEffect = 1.0
     @GestureState private var scaleEffectGestureState: CGFloat = 1
@@ -60,7 +64,20 @@ struct MainView: View {
     private var totalRotation: Angle {
         rotation + rotationGestureState
     }
+    
     @State private var isInExploringMode: Bool = true
+    @State private var shouldDrawPaths: Bool = false
+    private func shouldBeInGrayscale(_ note: Note) -> Bool {
+        guard let draggedNote else { return false }
+        if !isInExploringMode {
+            return note != draggedNote && note != dragDestination ? true : false
+        } else {
+            return note != draggedNote ? true : false
+        }
+    }
+    private func isOriginLinked(_ note: Note, to destination: Note) -> Bool {
+        return note.linkedNotes.contains(destination)
+    }
     
     // MARK: - View animations
     @Namespace private var noteNamespace
@@ -86,6 +103,12 @@ struct MainView: View {
                 viewModel = MainViewModel(modelContext)
                 viewModel.buildInitialData()
                 viewModel.loadView()
+                Task {
+                    try? await Task.sleep(for: .seconds(0.5))
+                    withAnimation(.easeInOut(duration: 0.5)) {
+                        shouldDrawPaths = true
+                    }
+                }
             }
         }
         .onOpenURL { url in
@@ -190,16 +213,18 @@ extension MainView {
                 .matchedTransitionSource(id: "settings", in: defaultNamespace)
             }
 
-            ToolbarItemGroup(placement: .primaryAction) {
-                createNewNoteAndSlipboxButtons
-                filterMenuButton
-                Button {
-                    isInExploringMode.toggle()
-                } label: {
-                    if isInExploringMode {
-                        Label("Exploring mode", systemImage: "hand.draw")
-                    } else {
-                        Label("Linking mode", systemImage: "link")
+            ToolbarItem(placement: .primaryAction) {
+                Menu("Controls", systemImage: "ellipsis") {
+                    createNewNoteAndSlipboxButtons
+                    filterMenuButton
+                    Button {
+                        isInExploringMode.toggle()
+                    } label: {
+                        if isInExploringMode {
+                            Label("Exploring mode", systemImage: "hand.draw")
+                        } else {
+                            Label("Linking mode", systemImage: "personalhotspot")
+                        }
                     }
                 }
             }
@@ -313,6 +338,8 @@ extension MainView {
         if let temporaryLinkPath {
             temporaryLinkPath
                 .stroke(accentColor)
+                .brightness(0.5)
+                .transition(.opacity)
         }
         ForEach(viewModel.filteredNotes(notesFromQuery)) { note in
             ForEach(note.linkedNotes) { linkedNote in
@@ -325,43 +352,75 @@ extension MainView {
     
     @ViewBuilder
     private func buildNotePath(from note: Note, to linkedNote: Note, in geometry: GeometryProxy) -> some View {
-        if viewModel.filteredNotes(notesFromQuery).contains(linkedNote) {
-            Path { path in
-                path.move(to: note.position.convertToCGPoint(in: geometry))
-                path.addLine(to: linkedNote.position.convertToCGPoint(in: geometry))
-            }
+        if viewModel.filteredNotes(notesFromQuery).contains(linkedNote) && shouldDrawPaths {
+            let points = trimmedPoints(from: note, to: linkedNote, in: geometry)
+            ArrowShape(
+                startPoint: points.start,
+                endPoint: points.end
+            )
             .stroke(accentColor)
+            .brightness(0.5)
+            .grayscale(shouldBeInGrayscale(note) && shouldBeInGrayscale(linkedNote) ? 1 : 0)
+            .transition(.opacity)
         }
+    }
+    
+    private func edgePoint(from origin: CGPoint, to destination: CGPoint, cardSize: CGSize) -> CGPoint {
+        let dx = origin.x - destination.x
+        let dy = origin.y - destination.y
+        guard dx != 0 || dy != 0 else { return destination }
+
+        let halfW = cardSize.width / 2
+        let halfH = cardSize.height / 2
+
+        var t = CGFloat.infinity
+        if dx != 0 { t = min(t, abs(halfW / dx)) }
+        if dy != 0 { t = min(t, abs(halfH / dy)) }
+
+        return CGPoint(
+            x: destination.x + t * dx,
+            y: destination.y + t * dy
+        )
+    }
+    
+    private func trimmedPoints(from note: Note, to linkedNote: Note, in geometry: GeometryProxy) -> (start: CGPoint, end: CGPoint) {
+        let start = note.position.convertToCGPoint(in: geometry)
+        let end = linkedNote.position.convertToCGPoint(in: geometry)
+        let startScale: CGFloat = (note == draggedNote || note == dragDestination) ? Constants.dragScale : 1
+        let endScale: CGFloat = (linkedNote == draggedNote || linkedNote == dragDestination) ? Constants.dragScale : 1
+        
+        let startCardSize = CGSize(
+            width: Constants.cardSize.width * startScale,
+            height: Constants.cardSize.height * startScale
+        )
+        let endCardSize = CGSize(
+            width: Constants.cardSize.width * endScale,
+            height: Constants.cardSize.height * endScale
+        )
+        
+        let trimmedStart = edgePoint(from: end, to: start, cardSize: startCardSize)
+        let trimmedEnd = edgePoint(from: start, to: end, cardSize: endCardSize)
+        
+        return (trimmedStart, trimmedEnd)
     }
     
     @ViewBuilder
     private func buildNoteCardTags(_ note: Note, in geometry: GeometryProxy) -> some View {
-        HStack(alignment: .center) {
-            Image(systemName: "tag")
-            Spacer()
-            LazyVGrid(
-                columns: [
-                    GridItem(
-                        .fixed(geometry.size.width * 0.5)
-                    )
-                ],
-                alignment: .leading,
-                spacing: 0
-            ) {
-                ForEach(note.tags) { tag in
-                    Text("\(tag.name)")
-                        .font(.caption)
-                        .lineLimit(1)
-                        .padding(.vertical, Constants.standardPadding / 2)
-                }
+        VStack(alignment: .leading, spacing: Constants.standardPadding) {
+            ForEach(note.tags.prefix(3)) { tag in
+                Label(tag.name, systemImage: "tag")
+                    .font(.caption)
+                    .lineLimit(1)
+                    .labelIconToTitleSpacing(Constants.standardPadding)
             }
         }
+        .padding(Constants.standardPadding/2)
     }
     
     @ViewBuilder
     private func buildContextMenu(for note: Note) -> some View {
         if !isInExploringMode {
-            Menu("Link note to", systemImage: "link") {
+            Menu("Link note to", systemImage: "hotspot") {
                 ForEach(viewModel.notes) { possibleLink in
                     if viewModel.shouldAllowLink(for: note, possibleLink: possibleLink) {
                         Button(possibleLink.name) {
@@ -370,7 +429,7 @@ extension MainView {
                     }
                 }
             }
-            Menu("Remove link to", systemImage: "nosign") {
+            Menu("Remove link to", systemImage: "hotspot.slash") {
                 ForEach(note.linkedNotes.sorted()) { link in
                     Button(link.name, role: .cancel) {
                         viewModel.removeLink(from: note, to: link)
@@ -389,31 +448,59 @@ extension MainView {
     private func buildNoteCard(_ note: Note, in geometry: GeometryProxy) -> some View {
         RoundedRectangle(cornerRadius: Constants.cornerRadius)
             .fill(Color.accentColor)
+            .shadow(radius: 10)
             .aspectRatio(Constants.aspectRatio, contentMode: .fit)
             .frame(width: Constants.noteWidth)
             .overlay(
-                GeometryReader { cardGeometry in
-                    VStack(alignment: .leading) {
-                        Text("\(note.name)")
-                            .font(.title3.bold())
-                        if !note.tags.isEmpty {
-                            buildNoteCardTags(note, in: geometry)
-                        }
-                    }
-                    .padding(Constants.standardPadding)
-                    .foregroundStyle(Color.appBackground)
-                }
+                cardOverlay(for: note)
             )
+            .overlay(alignment: .topTrailing) {
+                linkingOverlay(for: note)
+            }
+            .grayscale(shouldBeInGrayscale(note) ? 1 : 0)
+            .scaleEffect(note == draggedNote || note == dragDestination ? Constants.dragScale : 1)
             .matchedTransitionSource(id: note.id, in: noteNamespace)
             .contextMenu {
                 buildContextMenu(for: note)
             }
             .position(note.position.convertToCGPoint(in: geometry))
             .onTapGesture {
-                viewModel.controlModels.noteToOpen = note
+                if isInExploringMode {
+                    viewModel.controlModels.noteToOpen = note
+                }
             }
             .gesture(noteDragGesture(for: note, in: geometry))
             .zIndex(Constants.cardZIndex)
+    }
+    
+    private func cardOverlay(for note: Note) -> some View {
+        GeometryReader { cardGeometry in
+            VStack(alignment: .leading) {
+                Text("\(note.name)")
+                    .font(.title3.bold())
+                if !note.tags.isEmpty {
+                    buildNoteCardTags(note, in: cardGeometry)
+                }
+            }
+            .padding(Constants.standardPadding)
+            .foregroundStyle(Color.appBackground)
+        }
+    }
+    
+    @ViewBuilder
+    private func linkingOverlay(for note: Note) -> some View {
+        if let dragDestination, let draggedNote, note == dragDestination {
+            Image(systemName: isOriginLinked(draggedNote, to: dragDestination) ? "personalhotspot.slash" : "personalhotspot")
+                .foregroundStyle(Color.appBackground)
+                .padding(Constants.standardPadding / 2)
+                .background(isOriginLinked(draggedNote, to: dragDestination) ? Color.red : Color.green)
+                .clipShape(.circle)
+                .padding(2)
+                .background(Color.appBackground)
+                .clipShape(.circle)
+                .padding(Constants.standardPadding / 2)
+                .font(.caption)
+        }
     }
 }
 
@@ -529,6 +616,25 @@ extension MainView {
     private func noteDragGesture(for note: Note, in geometry: GeometryProxy) -> some Gesture {
         DragGesture()
             .onChanged{ inMotionDragValue in
+                withAnimation {
+                    if draggedNote == nil {
+                        draggedNote = note
+                    }
+                    if !isInExploringMode {
+                        if let closestDragDestination = viewModel.closestNote(
+                            from: note,
+                            to: inMotionDragValue.location,
+                            in: geometry,
+                            noteSize: Constants.cardSize
+                        ) {
+                            if closestDragDestination != dragDestination {
+                                dragDestination = closestDragDestination
+                            }
+                        } else {
+                            dragDestination = nil
+                        }
+                    }
+                }
                 withAnimation(.smooth) {
                     if isInExploringMode {
                         viewModel.updateNotePosition(note, to: inMotionDragValue.location, in: geometry, panOffset: .zero, zoom: 1, rotation: .zero)
@@ -545,10 +651,15 @@ extension MainView {
                     if isInExploringMode {
                         viewModel.updateNotePosition(note, to: endingDragValue.location, in: geometry, panOffset: .zero, zoom: 1, rotation: .zero)
                     } else {
-                        viewModel.setDraggedLink(from: note, to: endingDragValue.location, in: geometry, noteSize: Constants.cardSize)
+                        viewModel.setOrRemoveDraggedLink(from: note, to: endingDragValue.location, in: geometry, noteSize: Constants.cardSize)
                     }
                 }
-                temporaryLinkPath = nil
+                withAnimation {
+                    temporaryLinkPath = nil
+                    draggedNote = nil
+                    dragDestination = nil
+                }
             }
     }
 }
+

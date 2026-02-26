@@ -48,7 +48,7 @@ final class Note: Identifiable, Named {
         slipbox: Slipbox,
         title: String,
         contentBody: AttributedString = "",
-        position: Position = .zero
+        position: Position = Position(x: Int.random(in: -200...200), y: Int.random(in: -200...200))
     ) {
         self.id = id
         self.dateCreated = dateCreated

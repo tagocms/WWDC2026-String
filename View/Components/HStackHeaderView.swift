@@ -140,7 +140,6 @@ struct HStackHeaderView<T: Hashable & Identifiable & Named & Comparable>: View {
                 if isAllowedToCreate() {
                     Button("Create \(text)", systemImage: "plus") {
                         withAnimation {
-                            // TODO: - Lidar com isso e corrigir o bug do overlay das tags - e componentizar isso, para usar nas linkedNotes também.
                             onCreate()
                             text = ""
                         }

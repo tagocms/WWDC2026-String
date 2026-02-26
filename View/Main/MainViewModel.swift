@@ -207,7 +207,8 @@ class MainViewModel {
                 
                 To get started, tap here: /Next Note/
                 """
-                )
+                ),
+                position: Position(x: 0, y: 0)
             )
             
             let nextNote = Note(
@@ -341,7 +342,6 @@ class MainViewModel {
     /// Updates note position in the model context.
     func updateNotePosition(_ note: Note, to point: CGPoint, in geometry: GeometryProxy, panOffset: CGOffset, zoom: CGFloat, rotation: Angle) {
         note.updatePosition(to: .converted(from: point, in: geometry, panOffset: panOffset, zoom: zoom, rotation: rotation))
-        try? modelContext.save()
     }
     
     /// Creates a new note in the model context and returns it.
@@ -426,8 +426,19 @@ class MainViewModel {
         }
     }
     
-    /// Calculates the distance between a note and the user's drag location and, if it coincides with the location of another note, links them together.
-    func setDraggedLink(from note: Note, to location: CGPoint, in geometry: GeometryProxy, noteSize: CGSize) {
+    /// Calculates the distance between a note and the user's drag location and, if it coincides with the location of another note, links them together - if not linked, if linked, unlink them.
+    func setOrRemoveDraggedLink(from note: Note, to location: CGPoint, in geometry: GeometryProxy, noteSize: CGSize) {
+        guard let closestNote = closestNote(from: note, to: location, in: geometry, noteSize: noteSize) else { return }
+        
+        if note.linkedNotes.contains(closestNote) {
+            removeLink(from: note, to: closestNote)
+        } else {
+            setLink(from: note, to: closestNote)
+        }
+    }
+    
+    /// Returns the closest note to the destination location set by the origin note.
+    func closestNote(from note: Note, to location: CGPoint, in geometry: GeometryProxy, noteSize: CGSize) -> Note? {
         var closestNote: Note? = nil
         var closestDistance: Float? = nil
         for possibleLink in notes {
@@ -438,8 +449,9 @@ class MainViewModel {
                 closestNote = possibleLink
             }
         }
-        guard let closestNote, closestDistance != nil else { return }
-        setLink(from: note, to: closestNote)
+        guard let closestNote, closestDistance != nil else { return  nil }
+        
+        return closestNote
     }
     
     /// Remove a link from one note to another.
