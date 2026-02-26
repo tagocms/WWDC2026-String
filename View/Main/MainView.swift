@@ -335,7 +335,7 @@ extension MainView {
         if let temporaryLinkPath {
             temporaryLinkPath
                 .stroke(accentColor)
-                .brightness(0.5)
+                .brightness(0.4)
                 .transition(.opacity)
         }
         ForEach(viewModel.filteredNotes(notesFromQuery)) { note in
@@ -356,7 +356,7 @@ extension MainView {
                 endPoint: points.end
             )
             .stroke(accentColor)
-            .brightness(0.5)
+            .brightness(0.4)
             .grayscale(shouldBeInGrayscale(note) && shouldBeInGrayscale(linkedNote) ? 1 : 0)
             .transition(.opacity)
         }
@@ -609,7 +609,7 @@ extension MainView {
     }
     
     private func noteDragGesture(for note: Note, in geometry: GeometryProxy) -> some Gesture {
-        DragGesture(minimumDistance: 10)
+        DragGesture()
             .onChanged{ inMotionDragValue in
                 withAnimation {
                     if draggedNote == nil {

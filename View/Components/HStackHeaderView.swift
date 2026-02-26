@@ -15,7 +15,8 @@ struct HStackHeaderView<T: Hashable & Identifiable & Named & Comparable>: View {
     @Binding var collection: [T]
     @Binding var text: String
     @FocusState private var isFocused
-    @State private var searchBarWidth: CGFloat = 0
+    @State private var isShowingOverlay: Bool = false
+    @State private var shouldLetFocusChange: Bool = true
     
     // MARK: - Stored properties
     let titleText: String
@@ -29,6 +30,11 @@ struct HStackHeaderView<T: Hashable & Identifiable & Named & Comparable>: View {
     
     // MARK: - Constants
     let standardSpacingAndPadding: CGFloat = 8
+    
+    // MARK: - Helper properties
+    private var itemsInSearch: [T] {
+        filteredItems.filter({ !collection.contains($0) })
+    }
     
     var body: some View {
         HStack(spacing: standardSpacingAndPadding * 2) {
@@ -46,21 +52,28 @@ struct HStackHeaderView<T: Hashable & Identifiable & Named & Comparable>: View {
             
             Spacer()
             
-            VStack(alignment: .leading, spacing: standardSpacingAndPadding) {
-                searchBar
-                    .background(
-                        GeometryReader { geometry in
-                            Color.clear
-                                .onAppear {
-                                    searchBarWidth = geometry.size.width
-                                }
-                        }
-                    )
-                overlayList
-                    .frame(maxWidth: searchBarWidth)
-            }
+            searchBar
+                .popover(isPresented: $isShowingOverlay) {
+                    overlayList
+                        .interactiveDismissDisabled()
+                }
         }
         .buttonStyle(.plain)
+        .onChange(of: isShowingOverlay) { _, newValue in
+            if !newValue {
+                shouldLetFocusChange = false
+            }
+        }
+        .onChange(of: isFocused) { oldValue, newValue in
+            if !shouldLetFocusChange {
+                isFocused = oldValue
+            } else {
+                if isShowingOverlay != isFocused {
+                    isShowingOverlay = isFocused
+                }
+            }
+            shouldLetFocusChange = true
+        }
         .onSubmit(of: .text) {
             if isAllowedToCreate() {
                 onCreate()
@@ -123,20 +136,20 @@ struct HStackHeaderView<T: Hashable & Identifiable & Named & Comparable>: View {
     
     @ViewBuilder
     private var overlayList: some View {
-        if isFocused {
-            VStack(alignment: .leading, spacing: standardSpacingAndPadding) {
-                ForEach(filteredItems.prefix(3)) { item in
-                    if !collection.contains(item) {
-                        Button(item.name, systemImage: systemImage) {
-                            withAnimation {
-                                collection.append(item)
-                                text = ""
-                            }
+        VStack(alignment: .leading, spacing: standardSpacingAndPadding) {
+            ForEach(itemsInSearch.prefix(3)) { item in
+                if !collection.contains(item) {
+                    Button(item.name, systemImage: systemImage) {
+                        withAnimation {
+                            collection.append(item)
+                            text = ""
                         }
-                        .labelIconToTitleSpacing(standardSpacingAndPadding)
-                        .padding(.top, standardSpacingAndPadding/2)
                     }
+                    .labelIconToTitleSpacing(standardSpacingAndPadding)
+                    .padding(.top, standardSpacingAndPadding/2)
                 }
+            }
+            Group {
                 if isAllowedToCreate() {
                     Button("Create \(text)", systemImage: "plus") {
                         withAnimation {
@@ -146,12 +159,21 @@ struct HStackHeaderView<T: Hashable & Identifiable & Named & Comparable>: View {
                     }
                     .labelIconToTitleSpacing(standardSpacingAndPadding)
                     .padding(.top, standardSpacingAndPadding/2)
+                } else if itemsInSearch.isEmpty && !text.isEmpty {
+                    Label("Can't create \(text)", systemImage: "exclamationmark.triangle")
+                        .foregroundStyle(.orange)
+                } else if itemsInSearch.isEmpty {
+                    Label("No items", systemImage: "exclamationmark.triangle")
+                        .foregroundStyle(.orange)
                 }
             }
-            .lineLimit(1)
-            .animation(.default, value: isFocused)
-            .transition(.scale)
+            .labelIconToTitleSpacing(standardSpacingAndPadding)
+            .padding(.top, standardSpacingAndPadding/2)
         }
+        .padding(standardSpacingAndPadding)
+        .lineLimit(1)
+        .animation(.default, value: isFocused)
+        .transition(.scale)
     }
     
     @ViewBuilder
