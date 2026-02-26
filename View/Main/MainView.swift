@@ -124,7 +124,7 @@ struct MainView: View {
 extension MainView {
     private struct SlipboxRowView: View {
         let slipbox: Slipbox
-
+        
         var body: some View {
             Group {
                 if slipbox.slipboxes.isEmpty {
@@ -212,18 +212,19 @@ extension MainView {
                 }
                 .matchedTransitionSource(id: "settings", in: defaultNamespace)
             }
-
-            ToolbarItem(placement: .primaryAction) {
+            
+            ToolbarItemGroup(placement: .primaryAction) {
+                createNewNoteAndSlipboxButtons
+                filterMenuButton
                 Menu("Controls", systemImage: "ellipsis") {
-                    createNewNoteAndSlipboxButtons
-                    filterMenuButton
+                    Button("Clear tag filter", systemImage: "tag.slash", role: .cancel) { viewModel.controlModels.filterTags.removeAll() }
                     Button {
                         isInExploringMode.toggle()
                     } label: {
                         if isInExploringMode {
-                            Label("Exploring mode", systemImage: "hand.draw")
+                            Label("In exploring mode", systemImage: "hand.draw")
                         } else {
-                            Label("Linking mode", systemImage: "personalhotspot")
+                            Label("In linking mode", systemImage: "personalhotspot")
                         }
                     }
                 }
@@ -264,22 +265,18 @@ extension MainView {
     }
     
     private var filterMenuButton: some View {
-        Menu {
-            Button("Clear filter", systemImage: "clear", role: .cancel) { viewModel.controlModels.filterTags.removeAll() }
-            Menu("Tags", systemImage: "tag") {
-                ForEach(viewModel.tags) { tag in
-                    Button(
-                        tag.name,
-                        systemImage: viewModel.controlModels.filterTags.contains(tag) ? "checkmark.circle" : "circle"
-                    ) {
-                        viewModel.onFilterTagTapped(tag)
-                    }
+        Menu("Tag Filter", systemImage: "tag") {
+            ForEach(viewModel.tags) { tag in
+                Button(
+                    tag.name,
+                    systemImage: viewModel.controlModels.filterTags.contains(tag) ? "checkmark.circle" : "circle"
+                ) {
+                    viewModel.onFilterTagTapped(tag)
                 }
+                .menuActionDismissBehavior(.disabled)
             }
-            .menuActionDismissBehavior(.disabled)
-        } label: {
-            Label("Filter", systemImage: "line.3.horizontal.decrease")
         }
+        .menuActionDismissBehavior(.disabled)
     }
     
     @ViewBuilder
@@ -369,14 +366,14 @@ extension MainView {
         let dx = origin.x - destination.x
         let dy = origin.y - destination.y
         guard dx != 0 || dy != 0 else { return destination }
-
+        
         let halfW = cardSize.width / 2
         let halfH = cardSize.height / 2
-
+        
         var t = CGFloat.infinity
         if dx != 0 { t = min(t, abs(halfW / dx)) }
         if dy != 0 { t = min(t, abs(halfH / dy)) }
-
+        
         return CGPoint(
             x: destination.x + t * dx,
             y: destination.y + t * dy
@@ -420,7 +417,7 @@ extension MainView {
     @ViewBuilder
     private func buildContextMenu(for note: Note) -> some View {
         if !isInExploringMode {
-            Menu("Link note to", systemImage: "hotspot") {
+            Menu("Link note to", systemImage: "personalhotspot") {
                 ForEach(viewModel.notes) { possibleLink in
                     if viewModel.shouldAllowLink(for: note, possibleLink: possibleLink) {
                         Button(possibleLink.name) {
@@ -429,7 +426,7 @@ extension MainView {
                     }
                 }
             }
-            Menu("Remove link to", systemImage: "hotspot.slash") {
+            Menu("Remove link to", systemImage: "personalhotspot.slash") {
                 ForEach(note.linkedNotes.sorted()) { link in
                     Button(link.name, role: .cancel) {
                         viewModel.removeLink(from: note, to: link)
@@ -465,9 +462,7 @@ extension MainView {
             }
             .position(note.position.convertToCGPoint(in: geometry))
             .onTapGesture {
-                if isInExploringMode {
-                    viewModel.controlModels.noteToOpen = note
-                }
+                viewModel.controlModels.noteToOpen = note
             }
             .gesture(noteDragGesture(for: note, in: geometry))
             .zIndex(Constants.cardZIndex)
@@ -614,7 +609,7 @@ extension MainView {
     }
     
     private func noteDragGesture(for note: Note, in geometry: GeometryProxy) -> some Gesture {
-        DragGesture()
+        DragGesture(minimumDistance: 10)
             .onChanged{ inMotionDragValue in
                 withAnimation {
                     if draggedNote == nil {
