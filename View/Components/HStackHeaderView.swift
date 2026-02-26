@@ -15,6 +15,7 @@ struct HStackHeaderView<T: Hashable & Identifiable & Named & Comparable>: View {
     @Binding var collection: [T]
     @Binding var text: String
     @FocusState private var isFocused
+    @State private var searchBarWidth: CGFloat = 0
     
     // MARK: - Stored properties
     let titleText: String
@@ -40,20 +41,23 @@ struct HStackHeaderView<T: Hashable & Identifiable & Named & Comparable>: View {
                     }
                 }
             }
-            .containerRelativeFrame(.horizontal) { value, axis in
-                value * 0.4
-            }
             .scrollIndicators(.hidden)
             .scrollBounceBehavior(.basedOnSize)
             
-            ZStack(alignment: .searchBarBottom) {
+            Spacer()
+            
+            VStack(alignment: .leading, spacing: standardSpacingAndPadding) {
                 searchBar
-                // TODO: - Melhorar o alignment guide para que o overlay fique literalmente por cima de todos os outros conteúdos dentro da ZStack, mas alinhado abaixo do searchTagsBar
+                    .background(
+                        GeometryReader { geometry in
+                            Color.clear
+                                .onAppear {
+                                    searchBarWidth = geometry.size.width
+                                }
+                        }
+                    )
                 overlayList
-                    .alignmentGuide(VerticalAlignment.searchBarBottom) { dimension in
-                        dimension[.top]
-                    }
-                    .padding(.top, standardSpacingAndPadding)
+                    .frame(maxWidth: searchBarWidth)
             }
         }
         .buttonStyle(.plain)
@@ -103,25 +107,25 @@ struct HStackHeaderView<T: Hashable & Identifiable & Named & Comparable>: View {
             Image(systemName: "plus")
             TextField("Add new \(titleText.lowercased())", text: $text)
                 .lineLimit(1)
-                .fixedSize(horizontal: true, vertical: false)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
                 .focused($isFocused)
                 .submitLabel(.done)
+                .frame(maxWidth: 100)
         }
         .padding(.horizontal, standardSpacingAndPadding)
         .padding(.vertical, standardSpacingAndPadding / 2)
         .background(accentColor.opacity(0.2))
         .foregroundStyle(accentColor)
         .clipShape(.capsule)
-        .frame(width: 100, alignment: .leading)
+        .frame(minWidth: 100, alignment: .leading)
     }
     
     @ViewBuilder
     private var overlayList: some View {
-        if isFocused && !text.isEmpty {
+        if isFocused {
             VStack(alignment: .leading, spacing: standardSpacingAndPadding) {
-                ForEach(filteredItems) { item in
+                ForEach(filteredItems.prefix(3)) { item in
                     if !collection.contains(item) {
                         Button(item.name, systemImage: systemImage) {
                             withAnimation {
@@ -130,6 +134,7 @@ struct HStackHeaderView<T: Hashable & Identifiable & Named & Comparable>: View {
                             }
                         }
                         .labelIconToTitleSpacing(standardSpacingAndPadding)
+                        .padding(.top, standardSpacingAndPadding/2)
                     }
                 }
                 if isAllowedToCreate() {
@@ -141,8 +146,10 @@ struct HStackHeaderView<T: Hashable & Identifiable & Named & Comparable>: View {
                         }
                     }
                     .labelIconToTitleSpacing(standardSpacingAndPadding)
+                    .padding(.top, standardSpacingAndPadding/2)
                 }
             }
+            .lineLimit(1)
             .animation(.default, value: isFocused)
             .transition(.scale)
         }

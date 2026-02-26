@@ -116,7 +116,7 @@ struct NoteView: View {
                     .attributedTextFormattingDefinition(NoteFormattingDefinition())
                     .autocorrectionDisabled()
                     .textInputAutocapitalization(.never)
-                    .frame(height: UIScreen.main.bounds.height * 0.4)
+                    .frame(minHeight: 400)
             }
             
             Section {
@@ -223,3 +223,4 @@ struct NoteView: View {
         }
     }
 }
+

@@ -221,7 +221,7 @@ class MainViewModel {
                     You can also create tags using similar syntax, but instead of slashes, you use only one hashtag at the beggining of the tag's name (#tag_name). Use tags to filter and categorize content more easily.
                     
                     Before your next step, experiment with these fundamentals: complete the link and tag below - for 'Final Tutorial Note' and 'tutorial', respectively.
-                    /Final Tutorial N
+                    /Final Tutorial N.../
                     #tutor
                     """
                 ),
