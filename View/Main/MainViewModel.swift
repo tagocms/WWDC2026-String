@@ -253,13 +253,13 @@ class MainViewModel {
                 contentBody: AttributedString(
                     """
                     The Zettelkasten Method is a note-taking and knowledge management method popularized by german sociologist /Niklas Luhmann/. It consists of creating atomic notes, which are singular pieces of knowledge extracted from reliable sources, and linking them together in order to build a greater understanding over the studied subjects and expanding the user's learnings - while also creating a larger personal knowledgebase and reference material.
-                    
+                    \n
                     The method consists of a list of principles and advocates for the existence of the following kinds of notes:
                     1. Fleeting notes - Fleeting ideas, made to be quickly remembered and discarded.
                     2. Literature notes - Summaries of books, courses, classes, videos etc., written using the one's own words.
                     3. Permanent notes - Atomic notes that consist of a single idea or concept, derived from the previous two types of notes. They should also be written using one's own words.
                     4. Project notes - Notes that may or may not be temporary, but which are linked to projects the user is undertaking or tasks that need to be remembered.
-                    
+                    \n
                     ????? can be used for all kinds of notes, but the examples we built are only of the first 3 types. 
                     To see these notes in action, tap one of the following links:
                     1. /Fleeting Note Example/

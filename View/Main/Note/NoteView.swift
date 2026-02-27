@@ -33,6 +33,9 @@ struct NoteView: View {
     
     @State private var isAlertPresented: Bool = false
     
+    // MARK: - Constants
+    let standardSpacingAndPadding: CGFloat = 8
+    
     // MARK: - View
     var body: some View {
         NavigationView {
@@ -133,11 +136,11 @@ struct NoteView: View {
             }
             
             Section {
-                Button("Delete note", role: .destructive) {
+                Button("Delete note", systemImage: "trash", role: .destructive) {
                     viewModel.controlModels.noteToDelete = note
                     isAlertPresented = true
                 }
-                .tint(nil)
+                .foregroundStyle(.red)
             }
         }
         .scrollIndicators(.hidden)
@@ -191,6 +194,7 @@ struct NoteView: View {
                         string.append(AttributedString(note.formatName))
                     }
                 }
+                .labelIconToTitleSpacing(standardSpacingAndPadding / 2)
             }
         }
     }
@@ -203,6 +207,7 @@ struct NoteView: View {
                         string.append(AttributedString(tag.formatName))
                     }
                 }
+                .labelIconToTitleSpacing(standardSpacingAndPadding / 2)
             }
         }
     }

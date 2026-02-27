@@ -65,6 +65,13 @@ struct MainView: View {
         rotation + rotationGestureState
     }
     
+    private var sliderBinding: Binding<Double> {
+        Binding(
+            get: { totalScaleEffect },
+            set: { scaleEffect = $0 }
+        )
+    }
+    
     @State private var isInExploringMode: Bool = true
     @State private var shouldDrawPaths: Bool = false
     private func shouldBeInGrayscale(_ note: Note) -> Bool {
@@ -294,6 +301,7 @@ extension MainView {
         Group {
             ZStack(alignment: .topTrailing) {
                 buildContentBody(in: geometry)
+                controlButtons(in: geometry)
             }
         }
         .onChange(of: viewModel.controlModels.filterSlipbox) {
@@ -345,7 +353,7 @@ extension MainView {
         if let temporaryLinkPath {
             temporaryLinkPath
                 .stroke(accentColor)
-                .brightness(0.4)
+                .brightness(0.2)
                 .transition(.opacity)
         }
         ForEach(viewModel.filteredNotes(notesFromQuery)) { note in
@@ -366,7 +374,7 @@ extension MainView {
                 endPoint: points.end
             )
             .stroke(accentColor)
-            .brightness(0.4)
+            .brightness(0.2)
             .grayscale(shouldBeInGrayscale(note) && shouldBeInGrayscale(linkedNote) ? 1 : 0)
             .transition(.opacity)
         }
@@ -510,6 +518,27 @@ extension MainView {
                 .font(.caption)
         }
     }
+    
+    @ViewBuilder
+    private func controlButtons(in geometry: GeometryProxy) -> some View {
+        if isShowingUIControls {
+            Group {
+                Slider(value: sliderBinding, in: 0...2) {
+                    Label("Zoom", systemImage: "arrow.up.left.and.down.right.magnifyingglass")
+                } minimumValueLabel: {
+                    Label("Min", systemImage: "minus.magnifyingglass")
+                } maximumValueLabel: {
+                    Label("Max", systemImage: "plus.magnifyingglass")
+                }
+
+            }
+            .frame(width: geometry.size.width * 0.3)
+            .padding(Constants.standardPadding / 2)
+            .glassEffect()
+            .padding(Constants.standardPadding)
+            .transition(.opacity)
+        }
+    }
 }
 
 // MARK: - UI Size methods
@@ -576,14 +605,21 @@ extension MainView {
     
     private var magnificationGesture: some Gesture {
         MagnifyGesture()
-            .updating($scaleEffectGestureState) { inMotionScale, scaleEffectGestureState, _ in
-                withAnimation {
-                    scaleEffectGestureState = inMotionScale.magnification
+                .updating($scaleEffectGestureState) { inMotionScale, scaleEffectGestureState, _ in
+                    withAnimation {
+                        let proposed = inMotionScale.magnification * scaleEffect
+                        if proposed > 2 {
+                            scaleEffectGestureState = 2 / scaleEffect
+                        } else if proposed < 0 {
+                            scaleEffectGestureState = 0 / scaleEffect
+                        } else {
+                            scaleEffectGestureState = inMotionScale.magnification
+                        }
+                    }
                 }
-            }
-            .onEnded { endingMotionScale in
-                scaleEffect *= endingMotionScale.magnification
-            }
+                .onEnded { endingMotionScale in
+                    scaleEffect = min(max(scaleEffect * endingMotionScale.magnification, 0), 2)
+                }
     }
     
     private var panGesture: some Gesture {

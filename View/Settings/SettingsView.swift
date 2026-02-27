@@ -27,8 +27,8 @@ struct SettingsView: View {
                 }
                 .tint(accentColor)
                 .id(accentColor)
-                ColorPicker("Accent color", selection: $accentColor, supportsOpacity: false)
-                Toggle("Show UI Controls", isOn: $isShowingUIControls)
+                ColorPicker("Accent color", selection: $accentColor.animation(), supportsOpacity: false)
+                Toggle("Show UI Controls", isOn: $isShowingUIControls.animation())
             }
         }
         .presentationDragIndicator(.visible)
