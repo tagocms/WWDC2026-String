@@ -40,7 +40,7 @@ extension Tag: Equatable {
 extension Tag: AutoFormatable {
     /// Variable used to standardize tag formatting
     var formatName: String {
-        return "#\(name)"
+        return "#\(name)#"
     }
 }
 

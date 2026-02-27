@@ -221,11 +221,11 @@ class MainViewModel {
                     """
                     What you've just tapped on is a link between two notes. 
                     You can create links by typing an existing note name between slashes ('/NoteName/'), such as /Next Note/ or /Welcome! Start here/. Use links to connect related information and build your own inter-connected knowledgebase about any topic that interests you.
-                    You can also create tags using similar syntax, but instead of slashes, you use only one hashtag at the beggining of the tag's name (#tag_name). Use tags to filter and categorize content more easily.
+                    You can also create tags using similar syntax, but instead of slashes, you use hashtags around of the tag's name (#tag_name#). Use tags to filter and categorize content more easily.
                     
                     Before your next step, experiment with these fundamentals: complete the link and tag below - for 'Final Tutorial Note' and 'tutorial', respectively.
                     /Final Tutorial N.../
-                    #tutor
+                    #tutor...#
                     """
                 ),
                 position: Position(x: 200, y: 0),

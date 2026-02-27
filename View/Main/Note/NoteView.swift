@@ -35,59 +35,70 @@ struct NoteView: View {
     
     // MARK: - View
     var body: some View {
-        Group {
-            if let viewModel {
-                let bindableViewModel = Bindable(viewModel)
-                buildForm(bindableViewModel)
-                    .onAppear {
-                        applyChangesToAttributedText()
-                    }
-                    .onChange(of: viewModel.selectedNoteContentBody) {
-                        applyChangesToAttributedText()
-                    }
-                    .onChange(of: viewModel.selectedNoteName) {
-                        applyChangesToAttributedText()
-                    }
-                    .alert(viewModel.alertTitle, isPresented: $isAlertPresented) {
-                        viewModel.buildAlertActions {
-                            dismiss()
+        NavigationView {
+            Group {
+                if let viewModel {
+                    let bindableViewModel = Bindable(viewModel)
+                    buildForm(bindableViewModel)
+                        .onAppear {
+                            applyChangesToAttributedText()
                         }
-                    } message: {
-                        Text(viewModel.alertMessage)
+                        .onChange(of: viewModel.selectedNoteContentBody) {
+                            applyChangesToAttributedText()
+                        }
+                        .onChange(of: viewModel.selectedNoteName) {
+                            applyChangesToAttributedText()
+                        }
+                        .alert(viewModel.alertTitle, isPresented: $isAlertPresented) {
+                            viewModel.buildAlertActions {
+                                dismiss()
+                            }
+                        } message: {
+                            Text(viewModel.alertMessage)
+                        }
+                } else {
+                    ProgressView().font(.largeTitle)
+                }
+            }
+            .task {
+                if viewModel == nil {
+                    viewModel = NoteViewModel(modelContext, note: note)
+                }
+            }
+            .onAppear {
+                if isBeingCreated {
+                    focusState = .name
+                }
+            }
+            .onChange(of: focusState) { _, newValue in
+                guard let viewModel else { return }
+                guard !viewModel.selectedNoteName.isEmpty,
+                      newValue == .name,
+                      isBeingCreated else { return }
+                // Selects the name text for newly created notes
+                nameTextFieldSelection = TextSelection(
+                    range: viewModel.selectedNoteName.startIndex..<viewModel.selectedNoteName.endIndex
+                )
+                isBeingCreated = false
+            }
+            .onChange(of: focusState) { oldValue, newValue in
+                guard let viewModel else { return }
+                // Cleans the text for selected note's name
+                if oldValue == .name, newValue != .name {
+                    viewModel.selectedNoteName = viewModel.selectedNoteName.trimmingCharacters(in: .whitespacesAndNewlines)
+                }
+            }
+            .presentationDragIndicator(.visible)
+            .toolbar {
+                if focusState == .contentBody {
+                    ToolbarItemGroup(placement: .keyboard) {
+                        Spacer()
+                        insertLinkedNoteButton
+                        insertTagButton
                     }
-            } else {
-                ProgressView().font(.largeTitle)
+                }
             }
         }
-        .task {
-            if viewModel == nil {
-                viewModel = NoteViewModel(modelContext, note: note)
-            }
-        }
-        .onAppear {
-            if isBeingCreated {
-                focusState = .name
-            }
-        }
-        .onChange(of: focusState) { _, newValue in
-            guard let viewModel else { return }
-            guard !viewModel.selectedNoteName.isEmpty,
-                  newValue == .name,
-                  isBeingCreated else { return }
-            // Selects the name text for newly created notes
-            nameTextFieldSelection = TextSelection(
-                range: viewModel.selectedNoteName.startIndex..<viewModel.selectedNoteName.endIndex
-            )
-            isBeingCreated = false
-        }
-        .onChange(of: focusState) { oldValue, newValue in
-            guard let viewModel else { return }
-            // Cleans the text for selected note's name
-            if oldValue == .name, newValue != .name {
-                viewModel.selectedNoteName = viewModel.selectedNoteName.trimmingCharacters(in: .whitespacesAndNewlines)
-            }
-        }
-        .presentationDragIndicator(.visible)
     }
     
     // MARK: - View components
@@ -118,6 +129,7 @@ struct NoteView: View {
                     .autocorrectionDisabled()
                     .textInputAutocapitalization(.never)
                     .frame(minHeight: 400)
+                    .focused($focusState, equals: .contentBody)
             }
             
             Section {
@@ -154,8 +166,8 @@ struct NoteView: View {
             text: bindableViewModel.newLinkedNoteName,
             titleText: "linked note",
             filteredItems: viewModel.filteredLinkedNotes,
-            systemImage: "document.on.document",
-            deleteSystemImage: "document.on.trash",
+            systemImage: "personalhotspot",
+            deleteSystemImage: "personalhotspot.slash",
             isTag: false
         ) { noteToOpen in
             mainViewModel.controlModels.noteToOpen = noteToOpen
@@ -169,6 +181,30 @@ struct NoteView: View {
             }
         }
         .focused($focusState, equals: .linkedNotes)
+    }
+    
+    private var insertLinkedNoteButton: some View {
+        Menu("Insert linked note", systemImage: "personalhotspot") {
+            ForEach(viewModel.notes.sorted()) { note in
+                Button(note.name, systemImage: "document") {
+                    viewModel.selectedNoteContentBody.transform(updating: &contentFieldSelection) { string in
+                        string.append(AttributedString(note.formatName))
+                    }
+                }
+            }
+        }
+    }
+    
+    private var insertTagButton: some View {
+        Menu("Insert tag", systemImage: "tag") {
+            ForEach(viewModel.tags.sorted()) { tag in
+                Button(tag.name, systemImage: "tag") {
+                    viewModel.selectedNoteContentBody.transform(updating: &contentFieldSelection) { string in
+                        string.append(AttributedString(tag.formatName))
+                    }
+                }
+            }
+        }
     }
     
     // MARK: - Initializer

@@ -190,7 +190,7 @@ struct HStackHeaderView<T: Hashable & Identifiable & Named & Comparable>: View {
                     onPrimaryAction?(item)
                 }
             }
-            Button("Remove '\(item.name)' from note", systemImage: deleteSystemImage, role: .destructive) {
+            Button("Remove all references to '\(item.name)' from note", systemImage: deleteSystemImage, role: .destructive) {
                 withAnimation {
                     collection.removeAll { $0.id == item.id }
                     onDelete?(item)
