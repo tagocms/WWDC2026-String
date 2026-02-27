@@ -64,6 +64,7 @@ struct SlipboxView: View {
                 viewModel.selectedSlipboxName = viewModel.selectedSlipboxName.trimmingCharacters(in: .whitespacesAndNewlines)
             }
         }
+        .presentationDragIndicator(.visible)
     }
     
     // MARK: - Initializer
@@ -97,6 +98,7 @@ struct SlipboxView: View {
                 viewModel.controlModels.slipboxToDelete = slipbox
                 isAlertPresented = true
             }
+            .tint(nil)
         }
     }
 }

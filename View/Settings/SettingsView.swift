@@ -12,7 +12,7 @@ struct SettingsView: View {
     static let userDefaultsColorKey = "colorKey"
     
     // MARK: - UI settings
-    @AppStorage("theme") private var theme: Theme = .system
+    @AppStorage("theme") private var theme: Theme = .light
     @AppStorage("isShowingUIControls") private var isShowingUIControls: Bool = true
     @AppStorage("colorKey") private var accentColor: Color = Color.accentColor
     
@@ -25,6 +25,8 @@ struct SettingsView: View {
                             .tag(theme)
                     }
                 }
+                .tint(accentColor)
+                .id(accentColor)
                 ColorPicker("Accent color", selection: $accentColor, supportsOpacity: false)
                 Toggle("Show UI Controls", isOn: $isShowingUIControls)
             }

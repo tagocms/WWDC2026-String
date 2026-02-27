@@ -9,7 +9,7 @@ struct MainView: View {
     @Query(Slipbox.fetchDescriptor) private var slipboxesFromQuery: [Slipbox]
     
     // MARK: - Theme and accent color
-    @AppStorage("theme") private var theme: Theme = .system
+    @AppStorage("theme") private var theme: Theme = .light
     @AppStorage("colorKey") private var accentColor: Color = Color.accentColor
     
     // MARK: - Settings State
@@ -162,6 +162,7 @@ extension MainView {
                                 viewModel.controlModels.slipboxToDelete = slipbox
                                 isAlertPresented = true
                             }
+                            .tint(nil)
                         }
                         .matchedTransitionSource(id: slipbox.id, in: slipboxNamespace)
                 }
@@ -213,6 +214,7 @@ extension MainView {
                 Button("Settings", systemImage: "gear") {
                     isShowingSettings.toggle()
                 }
+                .tint(nil)
                 .matchedTransitionSource(id: "settings", in: defaultNamespace)
             }
             
@@ -446,6 +448,7 @@ extension MainView {
                 viewModel.controlModels.noteToDelete = note
                 isAlertPresented = true
             }
+            .tint(nil)
         }
     }
     
@@ -453,7 +456,6 @@ extension MainView {
     private func buildNoteCard(_ note: Note, in geometry: GeometryProxy) -> some View {
         RoundedRectangle(cornerRadius: Constants.cornerRadius)
             .fill(accentColor)
-            .shadow(radius: 10)
             .aspectRatio(Constants.aspectRatio, contentMode: .fit)
             .frame(width: Constants.noteWidth)
             .overlay(
@@ -462,9 +464,10 @@ extension MainView {
             .overlay(alignment: .topTrailing) {
                 linkingOverlay(for: note)
             }
+            .matchedTransitionSource(id: note.id, in: noteNamespace)
+            .shadow(radius: 10)
             .grayscale(shouldBeInGrayscale(note) ? 1 : 0)
             .scaleEffect(note == draggedNote || note == dragDestination ? Constants.dragScale : 1)
-            .matchedTransitionSource(id: note.id, in: noteNamespace)
             .contextMenu {
                 buildContextMenu(for: note)
             }

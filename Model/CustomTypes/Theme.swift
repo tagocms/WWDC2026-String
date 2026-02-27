@@ -10,7 +10,6 @@ import SwiftUI
 enum Theme: String, CaseIterable {
     case light = "Light"
     case dark = "Dark"
-    case system = "System"
     
     var colorScheme: ColorScheme? {
         switch self {
@@ -18,8 +17,6 @@ enum Theme: String, CaseIterable {
                 .light
         case .dark:
                 .dark
-        case .system:
-                .none
         }
     }
 }

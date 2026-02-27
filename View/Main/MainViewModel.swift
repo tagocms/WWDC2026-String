@@ -98,7 +98,7 @@ class MainViewModel {
         if let slipboxToDelete = controlModels.slipboxToDelete {
             return "Are you sure you want to delete this slipbox? Every note and folder inside it will also be deleted - there are \(slipboxToDelete.totalNoteCount) notes inside."
         } else if let noteToDelete = controlModels.noteToDelete {
-            return "Are you sure you want to delete this note (\(noteToDelete.name))?"
+            return "Are you sure you want to delete this note?"
         }
         return ""
     }
@@ -106,16 +106,18 @@ class MainViewModel {
     func buildAlertActions(onDelete: (() -> Void)? = nil) -> some View {
         if let slipboxToDelete = controlModels.slipboxToDelete {
             Button("Cancel", role: .cancel) { self.controlModels.slipboxToDelete = nil }
-            Button("Delete") {
+            Button("Delete", role: .destructive) {
                 self.delete(slipboxToDelete)
                 onDelete?()
             }
+            .tint(nil)
         } else if let noteToDelete = controlModels.noteToDelete {
             Button("Cancel", role: .cancel) { self.controlModels.noteToDelete = nil }
-            Button("Delete") {
+            Button("Delete", role: .destructive) {
                 self.delete(noteToDelete)
                 onDelete?()
             }
+            .tint(nil)
         }
     }
     

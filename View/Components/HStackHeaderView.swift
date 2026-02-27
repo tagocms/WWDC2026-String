@@ -27,6 +27,7 @@ struct HStackHeaderView<T: Hashable & Identifiable & Named & Comparable>: View {
     let onPrimaryAction: ((T) -> Void)?
     let onCreate: () -> Void
     let isAllowedToCreate: () -> Bool
+    let onDelete: ((T) -> Void)?
     
     // MARK: - Constants
     let standardSpacingAndPadding: CGFloat = 8
@@ -100,7 +101,8 @@ struct HStackHeaderView<T: Hashable & Identifiable & Named & Comparable>: View {
         isTag: Bool = true,
         onPrimaryAction: ((T) -> Void)? = nil,
         onCreate: @escaping () -> Void,
-        isAllowedToCreate: @escaping () -> Bool
+        isAllowedToCreate: @escaping () -> Bool,
+        onDelete: ((T) -> Void)? = nil
     ) {
         self._collection = collection
         self._text = text
@@ -112,19 +114,23 @@ struct HStackHeaderView<T: Hashable & Identifiable & Named & Comparable>: View {
         self.onPrimaryAction = onPrimaryAction
         self.onCreate = onCreate
         self.isAllowedToCreate = isAllowedToCreate
+        self.onDelete = onDelete
     }
     
     // MARK: - View components
     private var searchBar: some View {
         HStack(spacing: standardSpacingAndPadding) {
             Image(systemName: "plus")
-            TextField("Add new \(titleText.lowercased())", text: $text)
-                .lineLimit(1)
-                .textInputAutocapitalization(.never)
-                .autocorrectionDisabled()
-                .focused($isFocused)
-                .submitLabel(.done)
-                .frame(maxWidth: 100)
+            TextField(text: $text) {
+                Text("Add new \(titleText.lowercased())")
+                    .foregroundStyle(accentColor.opacity(0.5))
+            }
+            .lineLimit(1)
+            .textInputAutocapitalization(.never)
+            .autocorrectionDisabled()
+            .focused($isFocused)
+            .submitLabel(.done)
+            .frame(maxWidth: 100)
         }
         .padding(.horizontal, standardSpacingAndPadding)
         .padding(.vertical, standardSpacingAndPadding / 2)
@@ -187,8 +193,10 @@ struct HStackHeaderView<T: Hashable & Identifiable & Named & Comparable>: View {
             Button("Remove '\(item.name)' from note", systemImage: deleteSystemImage, role: .destructive) {
                 withAnimation {
                     collection.removeAll { $0.id == item.id }
+                    onDelete?(item)
                 }
             }
+            .tint(nil)
         } label: {
             if isTag {
                 Text(item.name)

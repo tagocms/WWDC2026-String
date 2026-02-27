@@ -82,8 +82,14 @@ extension AutoFormatable {
         }
         var body = note.contentBody
         let targets: [Range<AttributedString.Index>] = String.ranges(of: AttributedString(oldFormattedName), in: body)
+        print(targets)
         for range in targets.reversed() {
-            body.characters.replaceSubrange(range, with: alteredItem.formatName)
+            if shouldDelete {
+                print("DELETE: ", alteredItem.formatName)
+            } else {
+                print(alteredItem.formatName)
+            }
+            body.characters.replaceSubrange(range, with: shouldDelete ? "" : alteredItem.formatName)
         }
         note.setContent(body)
     }

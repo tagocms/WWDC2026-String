@@ -87,6 +87,7 @@ struct NoteView: View {
                 viewModel.selectedNoteName = viewModel.selectedNoteName.trimmingCharacters(in: .whitespacesAndNewlines)
             }
         }
+        .presentationDragIndicator(.visible)
     }
     
     // MARK: - View components
@@ -124,6 +125,7 @@ struct NoteView: View {
                     viewModel.controlModels.noteToDelete = note
                     isAlertPresented = true
                 }
+                .tint(nil)
             }
         }
         .scrollIndicators(.hidden)
@@ -140,7 +142,11 @@ struct NoteView: View {
             deleteSystemImage: "tag.slash",
             onCreate: viewModel.createNewTagAndAddToSelectedNote,
             isAllowedToCreate: viewModel.isNewTagNameValid
-        )
+        ) { alteredItem in
+            try? Note.alterTextInContentBody(alteredItem, for: viewModel.note, oldFormattedName: alteredItem.formatName, shouldDelete: true) { noteToCheck, alteredItem in
+                true
+            }
+        }
         .focused($focusState, equals: .tags)
         
         HStackHeaderView(
@@ -157,6 +163,10 @@ struct NoteView: View {
             viewModel.createAndAddNoteToLinkedNotes()
         } isAllowedToCreate: {
             viewModel.isNewLinkedNoteNameValid()
+        } onDelete: { alteredItem in
+            try? Note.alterTextInContentBody(alteredItem, for: viewModel.note, oldFormattedName: alteredItem.formatName, shouldDelete: true) { noteToCheck, alteredItem in
+                true
+            }
         }
         .focused($focusState, equals: .linkedNotes)
     }
