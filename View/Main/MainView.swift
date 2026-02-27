@@ -89,7 +89,9 @@ struct MainView: View {
         Group {
             if let viewModel, viewModel.controlModels.isLoaded {
                 let bindableViewModel = Bindable(viewModel)
-                NavigationSplitView(columnVisibility: bindableViewModel.navigationSplitViewVisibility) {
+                NavigationSplitView(
+                    columnVisibility: bindableViewModel.navigationSplitViewVisibility
+                ) {
                     sidebarViewBody(bindableViewModel)
                 } detail: {
                     fullViewBody
@@ -98,13 +100,14 @@ struct MainView: View {
                 ProgressView().font(.largeTitle)
             }
         }
+        .transition(.opacity)
         .task {
             if viewModel == nil {
                 viewModel = MainViewModel(modelContext)
                 viewModel.buildInitialData()
                 viewModel.loadView()
                 Task {
-                    try? await Task.sleep(for: .seconds(0.5))
+                    try? await Task.sleep(for: .seconds(1))
                     withAnimation(.easeInOut(duration: 0.5)) {
                         shouldDrawPaths = true
                     }
@@ -214,17 +217,19 @@ extension MainView {
             }
             
             ToolbarItemGroup(placement: .primaryAction) {
-                createNewNoteAndSlipboxButtons
-                filterMenuButton
-                Menu("Controls", systemImage: "ellipsis") {
-                    Button("Clear tag filter", systemImage: "tag.slash", role: .cancel) { viewModel.controlModels.filterTags.removeAll() }
-                    Button {
-                        isInExploringMode.toggle()
-                    } label: {
-                        if isInExploringMode {
-                            Label("In exploring mode", systemImage: "hand.draw")
-                        } else {
-                            Label("In linking mode", systemImage: "personalhotspot")
+                Group {
+                    createNewNoteAndSlipboxButtons
+                    filterMenuButton
+                    Menu("Controls", systemImage: "ellipsis") {
+                        Button("Clear tag filter", systemImage: "tag.slash", role: .cancel) { viewModel.controlModels.filterTags.removeAll() }
+                        Button {
+                            isInExploringMode.toggle()
+                        } label: {
+                            if isInExploringMode {
+                                Label("In exploring mode", systemImage: "hand.draw")
+                            } else {
+                                Label("In linking mode", systemImage: "personalhotspot")
+                            }
                         }
                     }
                 }
@@ -271,8 +276,11 @@ extension MainView {
                     tag.name,
                     systemImage: viewModel.controlModels.filterTags.contains(tag) ? "checkmark.circle" : "circle"
                 ) {
-                    viewModel.onFilterTagTapped(tag)
+                    withAnimation {
+                        viewModel.onFilterTagTapped(tag)
+                    }
                 }
+                .contentTransition(.symbolEffect)
                 .menuActionDismissBehavior(.disabled)
             }
         }
@@ -444,7 +452,7 @@ extension MainView {
     @ViewBuilder
     private func buildNoteCard(_ note: Note, in geometry: GeometryProxy) -> some View {
         RoundedRectangle(cornerRadius: Constants.cornerRadius)
-            .fill(Color.accentColor)
+            .fill(accentColor)
             .shadow(radius: 10)
             .aspectRatio(Constants.aspectRatio, contentMode: .fit)
             .frame(width: Constants.noteWidth)
@@ -466,6 +474,7 @@ extension MainView {
             }
             .gesture(noteDragGesture(for: note, in: geometry))
             .zIndex(Constants.cardZIndex)
+            .transition(.scale)
     }
     
     private func cardOverlay(for note: Note) -> some View {
@@ -486,6 +495,7 @@ extension MainView {
     private func linkingOverlay(for note: Note) -> some View {
         if let dragDestination, let draggedNote, note == dragDestination {
             Image(systemName: isOriginLinked(draggedNote, to: dragDestination) ? "personalhotspot.slash" : "personalhotspot")
+                .symbolEffect(.variableColor, isActive: true)
                 .foregroundStyle(Color.appBackground)
                 .padding(Constants.standardPadding / 2)
                 .background(isOriginLinked(draggedNote, to: dragDestination) ? Color.red : Color.green)
