@@ -1,6 +1,6 @@
 //
 //  CGSize.swift
-//  CreativeChallenge
+//  String
 //
 //  Created by Tiago Camargo Maciel dos Santos on 07/02/26.
 //

@@ -1,6 +1,6 @@
 //
 //  HexColor.swift
-//  CreativeChallenge
+//  String
 //
 //  Created by Tiago Camargo Maciel dos Santos on 13/02/26.
 //

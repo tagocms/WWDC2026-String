@@ -1,6 +1,6 @@
 //
 //  SwiftUIView.swift
-//  CreativeChallenge
+//  String
 //
 //  Created by Tiago Camargo Maciel dos Santos on 26/02/26.
 //

@@ -1,6 +1,6 @@
 //
 //  String.swift
-//  CreativeChallenge
+//  String
 //
 //  Created by Tiago Camargo Maciel dos Santos on 25/02/26.
 //

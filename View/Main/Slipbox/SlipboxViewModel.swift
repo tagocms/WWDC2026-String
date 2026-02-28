@@ -1,6 +1,6 @@
 //
 //  SlipboxViewModel.swift
-//  CreativeChallenge
+//  String
 //
 //  Created by Tiago Camargo Maciel dos Santos on 20/02/26.
 //

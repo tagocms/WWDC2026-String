@@ -1,6 +1,6 @@
 //
 //  MainViewModel.swift
-//  CreativeChallenge
+//  String
 //
 //  Created by Tiago Camargo Maciel dos Santos on 06/02/26.
 //
@@ -206,9 +206,9 @@ class MainViewModel {
                 title: "Welcome! Start here",
                 contentBody: AttributedString(
                 """
-                Hello, welcome to ????, a note-taking app designed to make studies easier by helping to link connected information, categorize them by tags and/or folders (named slipboxes here!) and customize their content with rich text-editing capabilities, such as custom fonts, bold text and so much more!
-                
-                To get started, tap here: /Next Note/
+                Hello, welcome to String, a note-taking app designed to make studies easier by helping to link connected information, categorize them by tags and/or folders (named slipboxes here!) and customize their content with rich text-editing capabilities, such as custom fonts, bold text and so much more!
+                \n
+                To get started, tap here: /Configure Linked Notes and Tags/
                 """
                 ),
                 position: Position(x: 0, y: 0)
@@ -217,14 +217,16 @@ class MainViewModel {
             let nextNote = Note(
                 tags: [],
                 slipbox: welcomeSlipbox,
-                title: "Next Note",
+                title: "Configure Linked Notes and Tags",
                 contentBody: AttributedString(
                     """
-                    What you've just tapped on is a link between two notes. 
-                    You can create links by typing an existing note name between slashes ('/NoteName/'), such as /Next Note/ or /Welcome! Start here/. Use links to connect related information and build your own inter-connected knowledgebase about any topic that interests you.
+                    What you've just tapped on is a link between two notes.
+                    
+                    You can create links by typing an existing note name between slashes ('/NoteName/'), such as /Configure Linked Notes and Tags/ or /Welcome! Start here/. Use links to connect related information and build your own inter-connected knowledgebase about any topic that interests you.
                     You can also create tags using similar syntax, but instead of slashes, you use hashtags around of the tag's name (#tag_name#). Use tags to filter and categorize content more easily.
                     
                     Before your next step, experiment with these fundamentals: complete the link and tag below - for 'Final Tutorial Note' and 'tutorial', respectively.
+                    
                     /Final Tutorial N.../
                     #tutor...#
                     """
@@ -238,9 +240,12 @@ class MainViewModel {
                 title: "Final Tutorial Note",
                 contentBody: AttributedString(
                     """
-                    Before you begin, it's important to know that you can also create and customize new slipboxes and notes from both inside the note (in the header section) and in the map view. 
+                    Before you begin, it's important to know that you can also create and customize new slipboxes and notes from both inside the note (in the header section) and in the map view.
+                    
                     The map view is the hub for all your notes, and you can configure, customize and organize its positioning as you like. 
-                    Speaking of organization, ???? is built primarily for usage alongside the /Zettelkasten Method/, in order to extract the most out of the knowledge you acquire and persist that knowledge for the longest possible time.
+                    
+                    Speaking of organization, String is built primarily for usage alongside the /Zettelkasten Method/, in order to extract the most out of the knowledge you acquire and persist that knowledge for the longest possible time.
+                    
                     If you want to know more about this method, tap here: /Zettelkasten Method/
                     """
                 ),
@@ -254,14 +259,15 @@ class MainViewModel {
                 contentBody: AttributedString(
                     """
                     The Zettelkasten Method is a note-taking and knowledge management method popularized by german sociologist /Niklas Luhmann/. It consists of creating atomic notes, which are singular pieces of knowledge extracted from reliable sources, and linking them together in order to build a greater understanding over the studied subjects and expanding the user's learnings - while also creating a larger personal knowledgebase and reference material.
-                    \n
+                    
                     The method consists of a list of principles and advocates for the existence of the following kinds of notes:
                     1. Fleeting notes - Fleeting ideas, made to be quickly remembered and discarded.
                     2. Literature notes - Summaries of books, courses, classes, videos etc., written using the one's own words.
                     3. Permanent notes - Atomic notes that consist of a single idea or concept, derived from the previous two types of notes. They should also be written using one's own words.
                     4. Project notes - Notes that may or may not be temporary, but which are linked to projects the user is undertaking or tasks that need to be remembered.
-                    \n
-                    ????? can be used for all kinds of notes, but the examples we built are only of the first 3 types. 
+                    
+                    String can be used for all kinds of notes, but the examples we built are only of the first 3 types. 
+                    
                     To see these notes in action, tap one of the following links:
                     1. /Fleeting Note Example/
                     2. /Literature Note Example/
@@ -302,6 +308,7 @@ class MainViewModel {
                 contentBody: AttributedString(
                     """
                     According to Nasa, the sky is blue because sunlight reaches Earth's atmosphere and is scattered in all directions by all the gases and particles in the air. Blue light is scattered more than the other colors because it travels as shorter, smaller waves. This is why we see a blue sky most of the time.
+                    
                     Source: https://spaceplace.nasa.gov/blue-sky/en/
                     """
                 ),

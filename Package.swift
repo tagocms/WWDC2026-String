@@ -8,19 +8,19 @@ import PackageDescription
 import AppleProductTypes
 
 let package = Package(
-    name: "CreativeChallenge",
+    name: "String",
     platforms: [
         .iOS("26.0")
     ],
     products: [
         .iOSApplication(
-            name: "CreativeChallenge",
+            name: "String",
             targets: ["AppModule"],
-            bundleIdentifier: "com.tiago.santos.CreativeChallenge",
+            bundleIdentifier: "com.tiago.santos.String",
             teamIdentifier: "22MHF556GA",
             displayVersion: "1.0",
             bundleVersion: "1",
-            appIcon: .placeholder(icon: .checkmark),
+            appIcon: .asset("AppIcon"),
             accentColor: .presetColor(.blue),
             supportedDeviceFamilies: [
                 .pad,
@@ -42,5 +42,5 @@ let package = Package(
             path: "."
         )
     ],
-    swiftLanguageVersions: [.version("6")],
+    swiftLanguageVersions: [.version("6")]
 )

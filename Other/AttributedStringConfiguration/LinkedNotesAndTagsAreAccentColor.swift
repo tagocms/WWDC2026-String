@@ -1,6 +1,6 @@
 //
 //  LinkedNotesAndTagsAreAccentColor.swift
-//  CreativeChallenge
+//  String
 //
 //  Created by Tiago Camargo Maciel dos Santos on 19/02/26.
 //

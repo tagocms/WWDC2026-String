@@ -1,6 +1,6 @@
 //
 //  Alignment.swift
-//  CreativeChallenge
+//  String
 //
 //  Created by Tiago Camargo Maciel dos Santos on 17/02/26.
 //
