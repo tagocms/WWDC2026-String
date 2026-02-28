@@ -14,6 +14,8 @@ struct SettingsView: View {
     // MARK: - UI settings
     @AppStorage("theme") private var theme: Theme = .light
     @AppStorage("isShowingUIControls") private var isShowingUIControls: Bool = true
+    @AppStorage("isCameraGesturesEnabled") private var isCameraGesturesEnabled: Bool = true
+    @AppStorage("isControlGesturesEnabled") private var isControlGesturesEnabled: Bool = true
     @AppStorage("colorKey") private var accentColor: Color = Color.accentColor
     
     var body: some View {
@@ -29,6 +31,8 @@ struct SettingsView: View {
                 .id(accentColor)
                 ColorPicker("Accent color", selection: $accentColor.animation(), supportsOpacity: false)
                 Toggle("Show UI Controls", isOn: $isShowingUIControls.animation())
+                Toggle("Enable camera gestures", isOn: $isCameraGesturesEnabled)
+                Toggle("Enable control gestures", isOn: $isControlGesturesEnabled)
             }
         }
         .presentationDragIndicator(.visible)

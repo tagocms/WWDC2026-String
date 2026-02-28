@@ -15,6 +15,8 @@ struct MainView: View {
     // MARK: - Settings State
     @State private var isShowingSettings: Bool = false
     @AppStorage("isShowingUIControls") private var isShowingUIControls: Bool = true
+    @AppStorage("isCameraGesturesEnabled") private var isCameraGesturesEnabled: Bool = true
+    @AppStorage("isControlGesturesEnabled") private var isControlGesturesEnabled: Bool = true
     
     // MARK: - Alert
     @State private var isAlertPresented = false
@@ -307,16 +309,26 @@ extension MainView {
         .menuActionDismissBehavior(.disabled)
     }
     
+    private func buildContentBodyWithGestures(in geometry: GeometryProxy) -> some View {
+        buildContentBody(in: geometry)
+            .gesture(cameraGestures, isEnabled: isCameraGesturesEnabled)
+            .onTapGesture(count: 2) {
+                if isCameraGesturesEnabled {
+                    zoomToFit(in: geometry)
+                }
+            }
+    }
+    
     @ViewBuilder
     private func buildContentBodyWithModifiers(in geometry: GeometryProxy) -> some View {
         Group {
             ZStack(alignment: .bottomTrailing) {
-                buildContentBody(in: geometry)
-                    .gesture(allGestures)
-                    .onTapGesture(count: 2) {
-                        zoomToFit(in: geometry)
-                    }
+                if isControlGesturesEnabled {
+                    buildContentBodyWithGestures(in: geometry)
                     .gesture(multitouchGesture)
+                } else {
+                    buildContentBodyWithGestures(in: geometry)
+                }
                 if isShowingUIControls {
                     controlButtons(in: geometry)
                         .zIndex(Constants.controlsZIndex)
@@ -497,7 +509,7 @@ extension MainView {
             .onTapGesture {
                 viewModel.controlModels.noteToOpen = note
             }
-            .gesture(noteDragGesture(for: note, in: geometry))
+            .gesture(noteDragGesture(for: note, in: geometry), isEnabled: isControlGesturesEnabled)
             .zIndex(Constants.cardZIndex)
             .transition(.scale)
     }
@@ -708,7 +720,7 @@ extension MainView {
 
 // MARK: - Gestures
 extension MainView {
-    private var allGestures: some Gesture {
+    private var cameraGestures: some Gesture {
         panGesture
             .simultaneously(with: magnificationGesture)
             .simultaneously(with: rotationGesture)
