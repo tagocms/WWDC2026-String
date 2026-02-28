@@ -574,10 +574,17 @@ extension MainView {
     @ViewBuilder
     private func controlButtons(in geometry: GeometryProxy) -> some View {
         VStack(alignment: .center, spacing: Constants.standardPadding / 2) {
-            HStack(alignment: .center) {
-                panDistanceControl(in: geometry)
-                Spacer()
-                rotationControl
+            ViewThatFits {
+                HStack(alignment: .center) {
+                    panDistanceControl(in: geometry)
+                    Spacer()
+                    rotationControl
+                }
+                VStack(alignment: .center) {
+                    panDistanceControl(in: geometry)
+                    Spacer().frame(height: Constants.standardPadding / 2)
+                    rotationControl
+                }
             }
             zoomSliderControl
         }
