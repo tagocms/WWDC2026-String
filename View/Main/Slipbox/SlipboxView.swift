@@ -12,7 +12,6 @@ struct SlipboxView: View {
     // MARK: - Environment
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
-    @Environment(\.accessibilityVoiceOverEnabled) private var isVoiceOverEnabled // TODO: FAZER
     
     // MARK: - Data
     @Bindable var slipbox: Slipbox

@@ -28,16 +28,27 @@ struct MainView: View {
         static let dockBarDividerHeight: CGFloat = 66
         static let dockBarSpacing: CGFloat = 12
         
-        static let noteWidth: CGFloat = 150
-        static let aspectRatio: CGFloat = 1
+        static let cardWidth: CGFloat = 150
+        static let cardAspectRatio: CGFloat = 1
+        static let cardShadow: CGFloat = 10
         static let cardZIndex: Double = 999
         static let cardSize: CGSize = CGSize(
-            width: Constants.noteWidth,
-            height: Constants.noteWidth / Constants.aspectRatio
+            width: Constants.cardWidth,
+            height: Constants.cardWidth / Constants.cardAspectRatio
         )
-        static let dragScale: CGFloat = 1.3
+        static let cardDragScale: CGFloat = 1.3
+        
+        static let panStep: CGFloat = 80
+        static let rotationStep: Double = 15
         
         static let linkLineZIndex: Double = 0
+        static let controlsZIndex: Double = 1000
+        
+        static let controlSize: CGFloat = 36
+        static let maxDegrees: Double = 360
+        static let maxScale: Double = 2
+        static let minScale: Double = 0
+        static let controlTextMinSize: CGFloat = 40
     }
     
     // MARK: - View UI State
@@ -299,9 +310,17 @@ extension MainView {
     @ViewBuilder
     private func buildContentBodyWithModifiers(in geometry: GeometryProxy) -> some View {
         Group {
-            ZStack(alignment: .topTrailing) {
+            ZStack(alignment: .bottomTrailing) {
                 buildContentBody(in: geometry)
-                controlButtons(in: geometry)
+                    .gesture(allGestures)
+                    .onTapGesture(count: 2) {
+                        zoomToFit(in: geometry)
+                    }
+                    .gesture(multitouchGesture)
+                if isShowingUIControls {
+                    controlButtons(in: geometry)
+                        .zIndex(Constants.controlsZIndex)
+                }
             }
         }
         .onChange(of: viewModel.controlModels.filterSlipbox) {
@@ -315,11 +334,6 @@ extension MainView {
         } action: { _ in
             delayedZoomToFit(in: geometry)
         }
-        .gesture(allGestures)
-        .onTapGesture(count: 2) {
-            zoomToFit(in: geometry)
-        }
-        .gesture(multitouchGesture)
         .task {
             delayedZoomToFit(in: geometry)
         }
@@ -401,8 +415,8 @@ extension MainView {
     private func trimmedPoints(from note: Note, to linkedNote: Note, in geometry: GeometryProxy) -> (start: CGPoint, end: CGPoint) {
         let start = note.position.convertToCGPoint(in: geometry)
         let end = linkedNote.position.convertToCGPoint(in: geometry)
-        let startScale: CGFloat = (note == draggedNote || note == dragDestination) ? Constants.dragScale : 1
-        let endScale: CGFloat = (linkedNote == draggedNote || linkedNote == dragDestination) ? Constants.dragScale : 1
+        let startScale: CGFloat = (note == draggedNote || note == dragDestination) ? Constants.cardDragScale : 1
+        let endScale: CGFloat = (linkedNote == draggedNote || linkedNote == dragDestination) ? Constants.cardDragScale : 1
         
         let startCardSize = CGSize(
             width: Constants.cardSize.width * startScale,
@@ -464,8 +478,8 @@ extension MainView {
     private func buildNoteCard(_ note: Note, in geometry: GeometryProxy) -> some View {
         RoundedRectangle(cornerRadius: Constants.cornerRadius)
             .fill(accentColor)
-            .aspectRatio(Constants.aspectRatio, contentMode: .fit)
-            .frame(width: Constants.noteWidth)
+            .aspectRatio(Constants.cardAspectRatio, contentMode: .fit)
+            .frame(width: Constants.cardWidth)
             .overlay(
                 cardOverlay(for: note)
             )
@@ -473,9 +487,9 @@ extension MainView {
                 linkingOverlay(for: note)
             }
             .matchedTransitionSource(id: note.id, in: noteNamespace)
-            .shadow(radius: 10)
+            .shadow(radius: Constants.cardShadow)
             .grayscale(shouldBeInGrayscale(note) ? 1 : 0)
-            .scaleEffect(note == draggedNote || note == dragDestination ? Constants.dragScale : 1)
+            .scaleEffect(note == draggedNote || note == dragDestination ? Constants.cardDragScale : 1)
             .contextMenu {
                 buildContextMenu(for: note)
             }
@@ -519,24 +533,122 @@ extension MainView {
         }
     }
     
+    
+    
     @ViewBuilder
     private func controlButtons(in geometry: GeometryProxy) -> some View {
-        if isShowingUIControls {
-            Group {
-                Slider(value: sliderBinding, in: 0...2) {
-                    Label("Zoom", systemImage: "arrow.up.left.and.down.right.magnifyingglass")
-                } minimumValueLabel: {
-                    Label("Min", systemImage: "minus.magnifyingglass")
-                } maximumValueLabel: {
-                    Label("Max", systemImage: "plus.magnifyingglass")
-                }
-
+        VStack(alignment: .center, spacing: Constants.standardPadding / 2) {
+            HStack(alignment: .center) {
+                panDistanceControl(in: geometry)
+                Spacer()
+                rotationControl
             }
-            .frame(width: geometry.size.width * 0.3)
-            .padding(Constants.standardPadding / 2)
-            .glassEffect()
-            .padding(Constants.standardPadding)
-            .transition(.opacity)
+            zoomSliderControl
+        }
+        .frame(width: geometry.size.width * 0.2)
+        .padding(Constants.standardPadding * 2)
+        .glassEffect(in: .rect(cornerRadius: Constants.cornerRadius))
+        .padding(Constants.standardPadding * 2)
+        .contentShape(Rectangle())
+        .transition(.opacity)
+    }
+    
+    private func panDistanceControl(in geometry: GeometryProxy) -> some View {
+        Grid(
+            horizontalSpacing: Constants.standardPadding / 4,
+            verticalSpacing: Constants.standardPadding / 4
+        ) {
+            GridRow {
+                Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
+                
+                Button {
+                    withAnimation { panDistance.height += Constants.panStep }
+                } label: {
+                    Image(systemName: "chevron.up")
+                        .frame(width: Constants.controlSize, height: Constants.controlSize)
+                }
+                Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
+            }
+            
+            GridRow {
+                Button {
+                    withAnimation { panDistance.width += Constants.panStep }
+                } label: {
+                    Image(systemName: "chevron.left")
+                        .frame(width: Constants.controlSize, height: Constants.controlSize)
+                }
+                
+                Button {
+                    withAnimation { zoomToFit(in: geometry) }
+                } label: {
+                    Image(systemName: "scope")
+                        .frame(width: Constants.controlSize, height: Constants.controlSize)
+                }
+                .buttonRepeatBehavior(.disabled)
+                
+                Button {
+                    withAnimation { panDistance.width -= Constants.panStep }
+                } label: {
+                    Image(systemName: "chevron.right")
+                        .frame(width: Constants.controlSize, height: Constants.controlSize)
+                }
+            }
+            
+            GridRow {
+                Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
+                
+                Button {
+                    withAnimation { panDistance.height -= Constants.panStep }
+                } label: {
+                    Image(systemName: "chevron.down")
+                        .frame(width: Constants.controlSize, height: Constants.controlSize)
+                }
+                
+                Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
+            }
+        }
+        .buttonRepeatBehavior(.enabled)
+    }
+    
+    private var rotationControl: some View {
+        HStack(spacing: Constants.standardPadding) {
+            Button {
+                withAnimation {
+                    let newRotation = rotation.degrees - Constants.rotationStep
+                    rotation = .degrees(max(newRotation, -Constants.maxDegrees))
+                }
+            } label: {
+                Image(systemName: "arrow.counterclockwise")
+                    .frame(width: Constants.controlSize, height: Constants.controlSize)
+            }
+            .disabled(rotation.degrees <= -Constants.maxDegrees)
+            
+            Text("\(Int(totalRotation.degrees.rounded()))°")
+                .font(.subheadline.monospacedDigit())
+                .contentTransition(.numericText())
+                .frame(minWidth: Constants.controlTextMinSize)
+            
+            Button {
+                withAnimation {
+                    let newRotation = rotation.degrees + Constants.rotationStep
+                    rotation = .degrees(min(newRotation, Constants.maxDegrees))
+                }
+            } label: {
+                Image(systemName: "arrow.clockwise")
+                    .frame(width: Constants.controlSize, height: Constants.controlSize)
+            }
+            .disabled(rotation.degrees >= Constants.maxDegrees)
+        }
+        .buttonRepeatBehavior(.enabled)
+    }
+    
+    private var zoomSliderControl: some View {
+        Slider(value: sliderBinding, in: Constants.minScale...Constants.maxScale) {
+            Label("Zoom", systemImage: "arrow.up.left.and.down.right.magnifyingglass")
+        } minimumValueLabel: {
+            Image(systemName: "minus.magnifyingglass")
+        } maximumValueLabel: {
+            Image(systemName: "plus.magnifyingglass")
         }
     }
 }
@@ -566,10 +678,9 @@ extension MainView {
     }
     
     private func zoomToFit(in geometry: GeometryProxy) {
-        let rotationNormalized = rotation.degrees.isNormal ? rotation.degrees : 0
         withAnimation {
             panDistance = .zero
-            rotation = .degrees(Double((Int(rotationNormalized) / 360) * 360))
+            rotation = .degrees(0)
             
             let bbox = boundingBoxForMap
             let geometryFrame = geometry.frame(in: .local).insetBy(
@@ -584,7 +695,7 @@ extension MainView {
             
             let hZoom = geometryFrame.width / bbox.width
             let vZoom = geometryFrame.height / bbox.height
-            scaleEffect = min(min(hZoom, vZoom), 2)
+            scaleEffect = min(min(hZoom, vZoom), Constants.maxScale)
             
             panDistance = CGOffset(
                 width: -bbox.midX * totalScaleEffect,
@@ -605,21 +716,26 @@ extension MainView {
     
     private var magnificationGesture: some Gesture {
         MagnifyGesture()
-                .updating($scaleEffectGestureState) { inMotionScale, scaleEffectGestureState, _ in
-                    withAnimation {
-                        let proposed = inMotionScale.magnification * scaleEffect
-                        if proposed > 2 {
-                            scaleEffectGestureState = 2 / scaleEffect
-                        } else if proposed < 0 {
-                            scaleEffectGestureState = 0 / scaleEffect
-                        } else {
-                            scaleEffectGestureState = inMotionScale.magnification
-                        }
+            .updating($scaleEffectGestureState) { inMotionScale, scaleEffectGestureState, _ in
+                withAnimation {
+                    let proposed = inMotionScale.magnification * scaleEffect
+                    if proposed > Constants.maxScale {
+                        scaleEffectGestureState = Constants.maxScale / scaleEffect
+                    } else if proposed < Constants.minScale {
+                        scaleEffectGestureState = Constants.minScale / scaleEffect
+                    } else {
+                        scaleEffectGestureState = inMotionScale.magnification
                     }
                 }
-                .onEnded { endingMotionScale in
-                    scaleEffect = min(max(scaleEffect * endingMotionScale.magnification, 0), 2)
-                }
+            }
+            .onEnded { endingMotionScale in
+                scaleEffect = min(
+                    max(
+                        scaleEffect * endingMotionScale.magnification, Constants.minScale
+                    ),
+                    Constants.maxScale
+                )
+            }
     }
     
     private var panGesture: some Gesture {
@@ -638,11 +754,25 @@ extension MainView {
         RotateGesture()
             .updating($rotationGestureState) { inMotionRotationValue, rotationGestureState, _ in
                 guard inMotionRotationValue.rotation.degrees.isNormal else { return }
-                rotationGestureState = inMotionRotationValue.rotation
+                let proposed = inMotionRotationValue.rotation + rotation
+                let threeSixtyAngle = Angle(degrees: Constants.maxDegrees)
+                if proposed > threeSixtyAngle {
+                    rotationGestureState = threeSixtyAngle - rotation
+                } else if proposed < -threeSixtyAngle {
+                    rotationGestureState = -threeSixtyAngle - rotation
+                } else {
+                    rotationGestureState = inMotionRotationValue.rotation
+                }
             }
             .onEnded { endingRotationValue in
                 guard endingRotationValue.rotation.degrees.isNormal else { return }
-                rotation += endingRotationValue.rotation
+                rotation = min(
+                    max(
+                        rotation + endingRotationValue.rotation, .degrees(-Constants.maxDegrees)
+                    ),
+                    .degrees(Constants.maxDegrees)
+                )
+                
             }
     }
     
