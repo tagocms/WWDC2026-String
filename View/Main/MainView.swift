@@ -13,10 +13,15 @@ struct MainView: View {
     @AppStorage("colorKey") private var accentColor: Color = Color.accentColor
     
     // MARK: - Settings State
+    @Environment(\.accessibilityVoiceOverEnabled) private var isVoiceOverEnabled
     @State private var isShowingSettings: Bool = false
+    @AppStorage("isMapViewEnabled") private var isMapViewEnabled: Bool = true
     @AppStorage("isShowingUIControls") private var isShowingUIControls: Bool = true
     @AppStorage("isCameraGesturesEnabled") private var isCameraGesturesEnabled: Bool = true
     @AppStorage("isControlGesturesEnabled") private var isControlGesturesEnabled: Bool = true
+    private var shouldDisplayMapView: Bool {
+        isMapViewEnabled && !isVoiceOverEnabled
+    }
     
     // MARK: - Alert
     @State private var isAlertPresented = false
@@ -199,8 +204,14 @@ extension MainView {
         Group {
             if let viewModel {
                 let bindableViewModel = Bindable(viewModel)
-                GeometryReader { geometry in
-                    buildContentBodyWithModifiers(in: geometry)
+                Group {
+                    if shouldDisplayMapView {
+                        GeometryReader { geometry in
+                            buildMapView(in: geometry)
+                        }
+                    } else {
+                        listView
+                    }
                 }
                 .sheet(item: bindableViewModel.controlModels.noteToOpen) { note in
                     NoteView(note, isBeingCreated: viewModel.controlModels.isBeingCreated)
@@ -224,18 +235,29 @@ extension MainView {
                 } message: {
                     Text(viewModel.alertMessage)
                 }
+                .onAppear {
+                    viewModel.controlModels.shouldResetSidebarVisibility = shouldDisplayMapView
+                }
+                .onChange(of: isMapViewEnabled) {
+                    viewModel.controlModels.shouldResetSidebarVisibility = shouldDisplayMapView
+                }
+                .onChange(of: isVoiceOverEnabled) {
+                    viewModel.controlModels.shouldResetSidebarVisibility = shouldDisplayMapView
+                }
                 
             } else {
                 ProgressView().font(.largeTitle)
             }
         }
         .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                Button("Settings", systemImage: "gear") {
-                    isShowingSettings.toggle()
+            if !isVoiceOverEnabled {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Settings", systemImage: "gear") {
+                        isShowingSettings.toggle()
+                    }
+                    .tint(nil)
+                    .matchedTransitionSource(id: "settings", in: defaultNamespace)
                 }
-                .tint(nil)
-                .matchedTransitionSource(id: "settings", in: defaultNamespace)
             }
             
             ToolbarItemGroup(placement: .primaryAction) {
@@ -244,13 +266,15 @@ extension MainView {
                     filterMenuButton
                     Menu("Controls", systemImage: "ellipsis") {
                         Button("Clear tag filter", systemImage: "tag.slash", role: .cancel) { viewModel.controlModels.filterTags.removeAll() }
-                        Button {
-                            isInExploringMode.toggle()
-                        } label: {
-                            if isInExploringMode {
-                                Label("In exploring mode", systemImage: "hand.draw")
-                            } else {
-                                Label("In linking mode", systemImage: "personalhotspot")
+                        if !shouldDisplayMapView {
+                            Button {
+                                isInExploringMode.toggle()
+                            } label: {
+                                if isInExploringMode {
+                                    Label("In exploring mode", systemImage: "hand.draw")
+                                } else {
+                                    Label("In linking mode", systemImage: "personalhotspot")
+                                }
                             }
                         }
                     }
@@ -320,12 +344,12 @@ extension MainView {
     }
     
     @ViewBuilder
-    private func buildContentBodyWithModifiers(in geometry: GeometryProxy) -> some View {
+    private func buildMapView(in geometry: GeometryProxy) -> some View {
         Group {
             ZStack(alignment: .bottomTrailing) {
                 if isControlGesturesEnabled {
                     buildContentBodyWithGestures(in: geometry)
-                    .gesture(multitouchGesture)
+                        .gesture(multitouchGesture)
                 } else {
                     buildContentBodyWithGestures(in: geometry)
                 }
@@ -849,3 +873,71 @@ extension MainView {
     }
 }
 
+// MARK: List View
+extension MainView {
+    @ViewBuilder
+    private var listView: some View {
+        if !viewModel.filteredNotes.isEmpty {
+            List {
+                ForEach(viewModel.filteredNotes) { note in
+                    Button {
+                        viewModel.controlModels.noteToOpen = note
+                    } label: {
+                        VStack(alignment: .leading) {
+                            Text(note.name)
+                                .font(.title3.bold())
+                            Group {
+                                if note.tags.isEmpty {
+                                    Text("No tags")
+                                } else {
+                                    HStack {
+                                        Image(systemName: "tag")
+                                        ForEach(note.tags.prefix(3)) { tag in
+                                            Text(tag.name)
+                                                .font(.subheadline)
+                                        }
+                                    }
+                                }
+                            }
+                            .foregroundStyle(.primary)
+                            .lineLimit(1)
+                            Group {
+                                if note.linkedNotes.isEmpty {
+                                    Text("No linked notes")
+                                } else {
+                                    HStack {
+                                        Image(systemName: "personalhotspot")
+                                        ForEach(note.linkedNotes.prefix(3)) { linkedNote in
+                                            Text(linkedNote.name)
+                                                .font(.subheadline)
+                                        }
+                                    }
+                                }
+                            }
+                            .foregroundStyle(.primary)
+                            .lineLimit(1)
+                        }
+                    }
+                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                        Button("Delete", systemImage: "trash") {
+                            viewModel.controlModels.noteToDelete = note
+                            isAlertPresented = true
+                        }
+                        .tint(.red)
+                    }
+                }
+            }
+        } else {
+            ZStack {
+                Color.appBackground
+                    .ignoresSafeArea()
+                Button {
+                    viewModel.createNewNote()
+                } label: {
+                    ContentUnavailableView("No notes found", systemImage: "document.badge.plus", description: Text("There are no notes in this slipbox and/or filter. Create a new one!"))
+                        .scaleEffect(1.5)
+                }
+            }
+        }
+    }
+}

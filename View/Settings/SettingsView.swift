@@ -13,10 +13,12 @@ struct SettingsView: View {
     
     // MARK: - UI settings
     @AppStorage("theme") private var theme: Theme = .light
+    @AppStorage("colorKey") private var accentColor: Color = Color.accentColor
+    @AppStorage("isMapViewEnabled") private var isMapViewEnabled: Bool = true
+    
     @AppStorage("isShowingUIControls") private var isShowingUIControls: Bool = true
     @AppStorage("isCameraGesturesEnabled") private var isCameraGesturesEnabled: Bool = true
     @AppStorage("isControlGesturesEnabled") private var isControlGesturesEnabled: Bool = true
-    @AppStorage("colorKey") private var accentColor: Color = Color.accentColor
     
     var body: some View {
         Form {
@@ -30,9 +32,15 @@ struct SettingsView: View {
                 .tint(accentColor)
                 .id(accentColor)
                 ColorPicker("Accent color", selection: $accentColor.animation(), supportsOpacity: false)
-                Toggle("Show UI Controls", isOn: $isShowingUIControls.animation())
-                Toggle("Enable camera gestures", isOn: $isCameraGesturesEnabled)
-                Toggle("Enable control gestures", isOn: $isControlGesturesEnabled)
+                Toggle("Enable map view", isOn: $isMapViewEnabled.animation())
+            }
+            
+            if isMapViewEnabled {
+                Section("Map View Options") {
+                    Toggle("Show UI Controls", isOn: $isShowingUIControls.animation())
+                    Toggle("Enable camera gestures", isOn: $isCameraGesturesEnabled)
+                    Toggle("Enable control gestures", isOn: $isControlGesturesEnabled)
+                }
             }
         }
         .presentationDragIndicator(.visible)

@@ -18,8 +18,9 @@ class MainViewModel {
     
     // MARK: - ControlModels
     struct ControlModels {
-        // MARK: - Initialization
+        // MARK: - Initialization and display
         var isLoaded = false
+        var shouldResetSidebarVisibility: Bool = true
         
         // MARK: - Selection
         var noteToOpen: Note? {
@@ -478,7 +479,9 @@ class MainViewModel {
     func filterForSlipbox(_ slipbox: Slipbox? = nil) {
         withAnimation {
             controlModels.filterSlipbox = slipbox
-            navigationSplitViewVisibility = .detailOnly
+            if controlModels.shouldResetSidebarVisibility {
+                navigationSplitViewVisibility = .detailOnly
+            }
         }
     }
     
