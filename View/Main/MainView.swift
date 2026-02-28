@@ -925,7 +925,18 @@ extension MainView {
                 buildListRowLinkedNoteGroup(for: note)
                     .opacity(0.6)
             }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(accessibilityLabel(for: note))
+            .accessibilityHint("Open note")
         }
+    }
+    
+    private func accessibilityLabel(for note: Note) -> String {
+        """
+        Note: \(note.name)
+        Tags: \(note.tags.sorted().map({$0.name}))
+        Linked Notes: \(note.linkedNotes.sorted().map({$0.name}))
+        """
     }
     
     private func buildListRowTagGroup(for note: Note) -> some View {

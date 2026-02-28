@@ -8,8 +8,9 @@
 import SwiftUI
 
 struct HStackHeaderView<T: Hashable & Identifiable & Named & Comparable>: View {
-    // MARK: - Preferences
+    // MARK: - Preferences and environment
     @AppStorage("colorKey") private var accentColor = Color.accentColor
+    @Environment(\.accessibilityVoiceOverEnabled) private var isVoiceOverEnabled
     
     // MARK: - State properties
     @Binding var collection: [T]
@@ -121,6 +122,7 @@ struct HStackHeaderView<T: Hashable & Identifiable & Named & Comparable>: View {
     private var searchBar: some View {
         HStack(spacing: standardSpacingAndPadding) {
             Image(systemName: "plus")
+                .accessibilityHidden(true)
             TextField(text: $text) {
                 Text("Add \(titleText.lowercased())")
                     .foregroundStyle(accentColor.opacity(0.5))
@@ -131,6 +133,8 @@ struct HStackHeaderView<T: Hashable & Identifiable & Named & Comparable>: View {
             .focused($isFocused)
             .submitLabel(.done)
             .frame(maxWidth: 100)
+            .accessibilityHint("Tap to add a \(titleText.lowercased())")
+            .accessibilityAddTraits(.allowsDirectInteraction)
         }
         .padding(.horizontal, standardSpacingAndPadding)
         .padding(.vertical, standardSpacingAndPadding / 2)
@@ -143,7 +147,17 @@ struct HStackHeaderView<T: Hashable & Identifiable & Named & Comparable>: View {
     @ViewBuilder
     private var overlayList: some View {
         VStack(alignment: .leading, spacing: standardSpacingAndPadding) {
-            ForEach(itemsInSearch.prefix(3)) { item in
+            Button {
+                isFocused = false
+            } label: {
+                Label("Close suggestions", systemImage: "xmark.circle.fill")
+                    .labelStyle(.iconOnly)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+            }
+            .accessibilityLabel("Close suggestions popover")
+            .accessibilityHint("Dismisses the suggestions list and hides the keyboard")
+            
+            ForEach(itemsInSearch.prefix(5)) { item in
                 if !collection.contains(item) {
                     Button(item.name, systemImage: systemImage) {
                         withAnimation {
@@ -153,6 +167,7 @@ struct HStackHeaderView<T: Hashable & Identifiable & Named & Comparable>: View {
                     }
                     .labelIconToTitleSpacing(standardSpacingAndPadding)
                     .padding(.top, standardSpacingAndPadding/2)
+                    .accessibilityHint("Adds \(item.name) to the \(titleText.lowercased()) list")
                 }
             }
             Group {
@@ -165,12 +180,15 @@ struct HStackHeaderView<T: Hashable & Identifiable & Named & Comparable>: View {
                     }
                     .labelIconToTitleSpacing(standardSpacingAndPadding)
                     .padding(.top, standardSpacingAndPadding/2)
+                    .accessibilityHint("Creates a new \(titleText.lowercased()) named \(text)")
                 } else if itemsInSearch.isEmpty && !text.isEmpty {
                     Label("Can't create \(text)", systemImage: "exclamationmark.triangle")
                         .foregroundStyle(.orange)
+                        .accessibilityLabel("Cannot create \(text). It already exists or is invalid.")
                 } else if itemsInSearch.isEmpty {
                     Label("No items", systemImage: "exclamationmark.triangle")
                         .foregroundStyle(.orange)
+                        .accessibilityLabel("No matching items found")
                 }
             }
             .labelIconToTitleSpacing(standardSpacingAndPadding)
