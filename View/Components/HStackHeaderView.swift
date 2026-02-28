@@ -122,7 +122,7 @@ struct HStackHeaderView<T: Hashable & Identifiable & Named & Comparable>: View {
         HStack(spacing: standardSpacingAndPadding) {
             Image(systemName: "plus")
             TextField(text: $text) {
-                Text("Add new \(titleText.lowercased())")
+                Text("Add \(titleText.lowercased())")
                     .foregroundStyle(accentColor.opacity(0.5))
             }
             .lineLimit(1)
@@ -199,16 +199,9 @@ struct HStackHeaderView<T: Hashable & Identifiable & Named & Comparable>: View {
             .tint(nil)
         } label: {
             if isTag {
-                Text(item.name)
-                    .padding(.horizontal, standardSpacingAndPadding)
-                    .padding(.vertical, standardSpacingAndPadding / 2)
-                    .background(accentColor.opacity(0.2))
-                    .clipShape(.capsule)
+                CapsuleView(name: item.name)
             } else {
-                Text(item.name)
-                    .padding(.horizontal, standardSpacingAndPadding)
-                    .padding(.vertical, standardSpacingAndPadding / 2)
-                    .foregroundStyle(accentColor)
+                LinkedNoteTextView(name: item.name)
             }
         }
     }

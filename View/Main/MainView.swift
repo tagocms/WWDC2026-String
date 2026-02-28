@@ -878,66 +878,89 @@ extension MainView {
     @ViewBuilder
     private var listView: some View {
         if !viewModel.filteredNotes.isEmpty {
-            List {
-                ForEach(viewModel.filteredNotes) { note in
-                    Button {
-                        viewModel.controlModels.noteToOpen = note
-                    } label: {
-                        VStack(alignment: .leading) {
-                            Text(note.name)
-                                .font(.title3.bold())
-                            Group {
-                                if note.tags.isEmpty {
-                                    Text("No tags")
-                                } else {
-                                    HStack {
-                                        Image(systemName: "tag")
-                                        ForEach(note.tags.prefix(3)) { tag in
-                                            Text(tag.name)
-                                                .font(.subheadline)
-                                        }
-                                    }
-                                }
-                            }
-                            .foregroundStyle(.primary)
-                            .lineLimit(1)
-                            Group {
-                                if note.linkedNotes.isEmpty {
-                                    Text("No linked notes")
-                                } else {
-                                    HStack {
-                                        Image(systemName: "personalhotspot")
-                                        ForEach(note.linkedNotes.prefix(3)) { linkedNote in
-                                            Text(linkedNote.name)
-                                                .font(.subheadline)
-                                        }
-                                    }
-                                }
-                            }
-                            .foregroundStyle(.primary)
-                            .lineLimit(1)
-                        }
-                    }
-                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                        Button("Delete", systemImage: "trash") {
-                            viewModel.controlModels.noteToDelete = note
-                            isAlertPresented = true
-                        }
-                        .tint(.red)
-                    }
-                }
-            }
+            listAvailableView
         } else {
-            ZStack {
-                Color.appBackground
-                    .ignoresSafeArea()
-                Button {
-                    viewModel.createNewNote()
-                } label: {
-                    ContentUnavailableView("No notes found", systemImage: "document.badge.plus", description: Text("There are no notes in this slipbox and/or filter. Create a new one!"))
-                        .scaleEffect(1.5)
+            listUnavailableView
+        }
+    }
+    
+    private var listAvailableView: some View {
+        List {
+            ForEach(viewModel.filteredNotes) { note in
+                buildListRow(for: note)
+                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                    Button("Delete", systemImage: "trash") {
+                        viewModel.controlModels.noteToDelete = note
+                        isAlertPresented = true
+                    }
+                    .tint(.red)
                 }
             }
         }
+    }
+    
+    private var listUnavailableView: some View {
+        ZStack {
+            Color.appBackground
+                .ignoresSafeArea()
+            Button {
+                viewModel.createNewNote()
+            } label: {
+                ContentUnavailableView("No notes found", systemImage: "document.badge.plus", description: Text("There are no notes in this slipbox and/or filter. Create a new one!"))
+                    .scaleEffect(1.5)
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private func buildListRow(for note: Note) -> some View {
+        Button {
+            viewModel.controlModels.noteToOpen = note
+        } label: {
+            VStack(alignment: .leading) {
+                Text(note.name)
+                    .font(.title3.bold())
+                buildListRowTagGroup(for: note)
+                    .opacity(0.6)
+                buildListRowLinkedNoteGroup(for: note)
+                    .opacity(0.6)
+            }
+        }
+    }
+    
+    private func buildListRowTagGroup(for note: Note) -> some View {
+        Group {
+            if note.tags.isEmpty {
+                Text("No tags")
+                    .font(.subheadline)
+            } else {
+                HStack {
+                    Image(systemName: "tag")
+                    ForEach(note.tags.sorted()) { tag in
+                        CapsuleView(name: tag.name)
+                    }
+                }
+                .font(.subheadline)
+            }
+        }
+        .lineLimit(1)
+    }
+    
+    private func buildListRowLinkedNoteGroup(for note: Note) -> some View {
+        Group {
+            if note.linkedNotes.isEmpty {
+                Text("No linked notes")
+                    .font(.subheadline)
+            } else {
+                HStack {
+                    Image(systemName: "personalhotspot")
+                    ForEach(note.linkedNotes.sorted()) { linkedNote in
+                        LinkedNoteTextView(name: linkedNote.name)
+                    }
+                }
+                .font(.subheadline)
+            }
+        }
+        .lineLimit(1)
     }
 }
