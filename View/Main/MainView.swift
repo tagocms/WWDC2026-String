@@ -1,6 +1,5 @@
 import SwiftData
 import SwiftUI
-import TipKit
 
 struct MainView: View {
     // MARK: - Data
@@ -109,16 +108,6 @@ struct MainView: View {
     @Namespace private var noteNamespace
     @Namespace private var slipboxNamespace
     @Namespace private var defaultNamespace
-    
-    // MARK: - View tips
-    struct MainViewTips {
-        static let onboardingTip = OnboardingTip()
-        static let settingsTip = SettingsTip()
-        static let noteControlTip = NoteControlTip()
-        static let draggingModeTip = DraggingModeTip()
-        static let uiControlsTip = UIControlsTip()
-        static let getStartedTip = GetStartedTip()
-    }
     
     // MARK: - View Body
     var body: some View {
@@ -265,12 +254,9 @@ extension MainView {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Settings", systemImage: "gear") {
                         isShowingSettings.toggle()
-                        MainViewTips.settingsTip.invalidate(reason: .actionPerformed)
-                        NoteControlTip.settingsShown.donate()
                     }
                     .tint(nil)
                     .matchedTransitionSource(id: "settings", in: defaultNamespace)
-                    .popoverTip(MainViewTips.settingsTip)
                 }
             }
             
@@ -278,23 +264,21 @@ extension MainView {
                 Group {
                     createNewNoteAndSlipboxButtons
                     filterMenuButton
-                    Menu("More options", systemImage: "ellipsis") {
+                    Menu("Controls", systemImage: "ellipsis") {
                         Button("Clear tag filter", systemImage: "tag.slash", role: .cancel) { viewModel.controlModels.filterTags.removeAll() }
-                        if shouldDisplayMapView {
+                        if !shouldDisplayMapView {
                             Button {
                                 isInExploringMode.toggle()
                             } label: {
                                 if isInExploringMode {
-                                    Label("In dragging mode", systemImage: "hand.draw")
+                                    Label("In exploring mode", systemImage: "hand.draw")
                                 } else {
                                     Label("In linking mode", systemImage: "personalhotspot")
                                 }
                             }
-                            .popoverTip(MainViewTips.draggingModeTip)
                         }
                     }
                 }
-                .popoverTip(MainViewTips.noteControlTip)
             }
         }
         .searchable(text: $searchText, placement: .automatic, prompt: "Search notes")
@@ -372,7 +356,6 @@ extension MainView {
                 if isShowingUIControls {
                     controlButtons(in: geometry)
                         .zIndex(Constants.controlsZIndex)
-                        .popoverTip(MainViewTips.uiControlsTip)
                 }
             }
         }
@@ -396,7 +379,6 @@ extension MainView {
     private func buildContentBody(in geometry: GeometryProxy) -> some View {
         ZStack(alignment: .bottom) {
             Color.appBackground
-                .popoverTip(MainViewTips.onboardingTip)
             Group {
                 buildNotes(in: geometry)
             }
@@ -429,13 +411,7 @@ extension MainView {
                 buildNotePath(from: note, to: linkedNote, in: geometry)
             }
             .zIndex(Constants.linkLineZIndex)
-            if note.name == "Welcome! Start here" {
-                buildNoteCard(note, in: geometry)
-                    .popoverTip(MainViewTips.getStartedTip)
-            } else {
-                buildNoteCard(note, in: geometry)
-            }
-            
+            buildNoteCard(note, in: geometry)
         }
     }
     

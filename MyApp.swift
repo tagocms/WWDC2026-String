@@ -1,6 +1,5 @@
 import SwiftData
 import SwiftUI
-import TipKit
 
 @main
 struct MyApp: App {
@@ -8,12 +7,6 @@ struct MyApp: App {
         WindowGroup {
             MainView()
                 .modelContainer(for: Slipbox.self, isAutosaveEnabled: true)
-                .task {
-                    try? Tips.configure([
-                        .displayFrequency(.immediate),
-                        .datastoreLocation(.applicationDefault)
-                    ])
-                }
         }
     }
 }
