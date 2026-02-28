@@ -247,6 +247,8 @@ class MainViewModel {
                     Speaking of organization, String is built primarily for usage alongside the /Zettelkasten Method/, in order to extract the most out of the knowledge you acquire and persist that knowledge for the longest possible time.
                     
                     If you want to know more about this method, tap here: /Zettelkasten Method/
+                    
+                    To finally begin your journey, dismiss this note and create a new one in the Map or List views.
                     """
                 ),
                 position: Position(x: 400, y: -250),

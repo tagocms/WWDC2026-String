@@ -266,12 +266,12 @@ extension MainView {
                     filterMenuButton
                     Menu("Controls", systemImage: "ellipsis") {
                         Button("Clear tag filter", systemImage: "tag.slash", role: .cancel) { viewModel.controlModels.filterTags.removeAll() }
-                        if !shouldDisplayMapView {
+                        if shouldDisplayMapView {
                             Button {
                                 isInExploringMode.toggle()
                             } label: {
                                 if isInExploringMode {
-                                    Label("In exploring mode", systemImage: "hand.draw")
+                                    Label("In organizing mode", systemImage: "hand.draw")
                                 } else {
                                     Label("In linking mode", systemImage: "personalhotspot")
                                 }

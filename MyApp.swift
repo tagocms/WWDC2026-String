@@ -3,10 +3,18 @@ import SwiftUI
 
 @main
 struct MyApp: App {
+    @State private var shouldShowOnboarding: Bool = true
+    @AppStorage("theme") private var theme: Theme = .light
+    
     var body: some Scene {
         WindowGroup {
-            MainView()
-                .modelContainer(for: Slipbox.self, isAutosaveEnabled: true)
+            if shouldShowOnboarding {
+                OnboardingView(show: $shouldShowOnboarding)
+                    .preferredColorScheme(theme.colorScheme)
+            } else {
+                MainView()
+                    .modelContainer(for: Slipbox.self, isAutosaveEnabled: true)
+            }
         }
     }
 }
