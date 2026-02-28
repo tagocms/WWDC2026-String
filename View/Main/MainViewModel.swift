@@ -385,7 +385,9 @@ class MainViewModel {
         } else if let slipbox = slipboxes.first {
             return createAndReturnNewNote(with: name, in: slipbox, shouldAutoOpen: shouldAutoOpen)
         } else {
-            return createAndReturnNewNote(with: name, in: createAndReturnNewSlipbox(), shouldAutoOpen: shouldAutoOpen)
+            let newSlipbox = createAndReturnNewSlipbox()
+            controlModels.filterSlipbox = newSlipbox
+            return createAndReturnNewNote(with: name, in: newSlipbox, shouldAutoOpen: shouldAutoOpen)
         }
     }
     
