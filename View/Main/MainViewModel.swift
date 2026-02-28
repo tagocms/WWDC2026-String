@@ -98,7 +98,7 @@ class MainViewModel {
     var alertMessage: String {
         if let slipboxToDelete = controlModels.slipboxToDelete {
             return "Are you sure you want to delete this slipbox? Every note and folder inside it will also be deleted - there are \(slipboxToDelete.totalNoteCount) notes inside."
-        } else if let noteToDelete = controlModels.noteToDelete {
+        } else if controlModels.noteToDelete != nil {
             return "Are you sure you want to delete this note?"
         }
         return ""

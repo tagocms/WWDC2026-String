@@ -11,7 +11,7 @@
 			<string></string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>tiagosantosURL</string>
+				<string>stringURL</string>
 			</array>
 		</dict>
 	</array>

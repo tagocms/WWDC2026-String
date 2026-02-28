@@ -9,8 +9,8 @@ import Foundation
 import SwiftData
 
 extension URL {
-    static let customScheme = "tiagosantosURL"
-    static let customHost = "com.tiago.santos"
+    static let customScheme = "stringURL"
+    static let customHost = "stringApp"
     static let customPath = "/noteview"
     
     static func createDeepLinkURL(data: UUID) -> URL? {
